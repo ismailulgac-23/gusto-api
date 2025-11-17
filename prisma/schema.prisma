@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  PROVIDER
+  RECEIVER
+}
+
+enum DemandStatus {
+  ACTIVE
+  CLOSED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+model Category {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  icon           String?
+  questions      Json?    // Dinamik soru kalıpları
+  parentId       String?  // Üst kategori ID (self-referential)
+  commissionRate Float?   // Komisyon oranı (binde cinsinden, örn: 5 = binde 5)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+  demands     Demand[]
+  users       UserCategory[]
+  charityActivities CharityActivity[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  phoneNumber   String    @unique
+  name          String?
+  email         String?   @unique
+  password      String?   // Admin login için
+  userType      UserType
+  isAdmin       Boolean   @default(false) // Admin kontrolü
+  profileImage  String?
+  bio           String?
+  location      String?
+  rating        Float     @default(0)
+  ratingCount   Int       @default(0)
+  isActive      Boolean   @default(true)
+  
+  // Ek alanlar - Flutter uygulaması için
+  companyName   String?   // Firma adı (PROVIDER için)
+  address       String?   // Adres
+  responseTime  String?   // Yanıt süresi
+  memberSince   String?   // Üyelik tarihi
+  completedJobs Int       @default(0)
+  cityId        String?   // Şehir ID
+  fcmToken      String?   // FCM token for push notifications
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  demands       Demand[]        @relation("UserDemands")
+  offers        Offer[]         @relation("UserOffers")
+  notifications Notification[]
+  reviews       Review[]        @relation("ReviewsByUser")
+  reviewsReceived Review[]      @relation("ReviewsForUser")
+  categories    UserCategory[]  // İş kategorileri (PROVIDER için - çoklu)
+  charityActivities CharityActivity[] @relation("CharityActivities")
+  city          City?           @relation(fields: [cityId], references: [id], onDelete: SetNull)
+
+  @@index([phoneNumber])
+  @@index([userType])
+  @@map("users")
+}
+
+model Demand {
+  id            String        @id @default(uuid())
+  userId        String
+  title         String
+  description   String
+  categoryId    String
+  location      String?
+  latitude      Float?
+  longitude     Float?
+  budget        Float?
+  images        String[]
+  status        DemandStatus  @default(ACTIVE)
+  
+  // Ek alanlar - Flutter uygulaması için
+  peopleCount       Int?          // Kişi sayısı
+  eventDate         DateTime?     // Etkinlik tarihi
+  eventTime         String?       // Etkinlik saati
+  isUrgent          Boolean       @default(false)
+  deadline          String?       // Teslim süresi
+  address           String?       // Detaylı adres
+  questionResponses Json?         // Dinamik soru cevapları
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  expiresAt     DateTime?
+
+  // Relations
+  user          User?         @relation("UserDemands", fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  offers        Offer[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([isUrgent])
+  @@map("demands")
+}
+
+model Offer {
+  id            String        @id @default(uuid())
+  demandId      String
+  providerId    String
+  message       String?
+  price         Float?
+  estimatedTime String?
+  status        OfferStatus   @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  demand        Demand?       @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  provider      User?         @relation("UserOffers", fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([demandId])
+  @@index([providerId])
+  @@index([status])
+  @@map("offers")
+}
+
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String
+  title         String
+  message       String
+  type          String
+  isRead        Boolean   @default(false)
+  data          Json?
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Review {
+  id            String    @id @default(uuid())
+  reviewerId    String
+  reviewedUserId String
+  rating        Int
+  comment       String?
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  reviewer      User?     @relation("ReviewsByUser", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser  User?     @relation("ReviewsForUser", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+
+  @@index([reviewerId])
+  @@index([reviewedUserId])
+  @@map("reviews")
+}
+
+model UserCategory {
+  id         String   @id @default(uuid())
+  userId     String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+  @@index([categoryId])
+  @@map("user_categories")
+}
+
+model CharityActivity {
+  id            String    @id @default(uuid())
+  providerId    String
+  categoryId    String
+  title         String
+  description   String
+  latitude      Float
+  longitude     Float
+  address       String
+  estimatedEndTime DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  provider      User      @relation("CharityActivities", fields: [providerId], references: [id], onDelete: Cascade)
+  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([providerId])
+  @@index([categoryId])
+  @@index([latitude, longitude])
+  @@map("charity_activities")
+}
+
+model City {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  isActive    Boolean  @default(false) // Uygulamanın aktif olduğu şehirler
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("cities")
+}
+

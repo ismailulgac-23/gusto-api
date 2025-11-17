@@ -37,7 +37,3 @@ coverage/
 # Prisma
 prisma/migrations/
 
-# Scripts with credentials (should not be committed)
-deploy.sh
-push.sh
-

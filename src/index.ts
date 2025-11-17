@@ -20,6 +20,7 @@ import settingsRouter from './routes/settings';
 import adminNotificationsRouter from './routes/admin_notifications';
 import { initializeFirebase } from './services/fcm.service';
 
+
 dotenv.config();
 
 const app = express();

@@ -149,7 +149,19 @@ router.post(
     body('icon').optional().isString(),
     body('isActive').optional().isBoolean(),
     body('questions').optional(),
-    body('parentId').optional().isUUID().withMessage('Geçersiz üst kategori ID'),
+    body('parentId')
+      .optional({ values: 'falsy' })
+      .custom((value) => {
+        if (!value || value === '' || value === null) {
+          return true; // Boş değer geçerli
+        }
+        // UUID format kontrolü
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(value)) {
+          throw new Error('Geçersiz üst kategori ID');
+        }
+        return true;
+      }),
     body('commissionRate').optional().isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
   ],
   validateRequest,
@@ -207,7 +219,19 @@ router.patch(
     body('icon').optional().isString(),
     body('isActive').optional().isBoolean(),
     body('questions').optional(),
-    body('parentId').optional().isUUID().withMessage('Geçersiz üst kategori ID'),
+    body('parentId')
+      .optional({ values: 'falsy' })
+      .custom((value) => {
+        if (!value || value === '' || value === null) {
+          return true; // Boş değer geçerli
+        }
+        // UUID format kontrolü
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(value)) {
+          throw new Error('Geçersiz üst kategori ID');
+        }
+        return true;
+      }),
     body('commissionRate').optional().isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
   ],
   validateRequest,

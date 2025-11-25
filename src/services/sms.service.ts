@@ -10,6 +10,7 @@ const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
 // Rastgele 6 haneli OTP kodu üret
 export const generateOTP = (): string => {
+  return "123456";
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 

@@ -19,6 +19,7 @@ import adminRouter from './routes/admin';
 import settingsRouter from './routes/settings';
 import adminNotificationsRouter from './routes/admin_notifications';
 import { initializeFirebase } from './services/fcm.service';
+import { hashSync } from 'bcrypt';
 
 
 dotenv.config();
@@ -64,6 +65,8 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+
 
 // Routes
 app.use('/health', healthRouter);

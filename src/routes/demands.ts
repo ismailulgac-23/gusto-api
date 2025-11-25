@@ -150,23 +150,24 @@ router.get(
                 icon: true,
               },
             },
-            cities: {
-              include: {
-                city: {
-                  select: {
-                    id: true,
-                    name: true,
-                    isActive: true,
-                  },
-                },
-              },
-            },
+            // cities: Geçici olarak kaldırıldı - Prisma generate edildikten sonra geri eklenecek
+            // cities: {
+            //   include: {
+            //     city: {
+            //       select: {
+            //         id: true,
+            //         name: true,
+            //         isActive: true,
+            //       },
+            //     },
+            //   },
+            // },
             _count: {
               select: {
                 offers: true,
               },
             },
-          } as any,
+          },
           orderBy: [
             { isUrgent: 'desc' }, // Urgent first
             { createdAt: 'desc' },

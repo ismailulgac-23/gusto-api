@@ -26,15 +26,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
@@ -42,6 +39,7 @@ const corsOptions = {
       'http://localhost:3000',
       'http://127.0.0.1:3001',
       'http://127.0.0.1:3000',
+      'https://api.gustoapp.net',
       process.env.CORS_ORIGIN || 'http://localhost:3001'
     ].filter(Boolean);
     

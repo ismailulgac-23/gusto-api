@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler';
+import prisma from '../lib/prisma';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -48,8 +49,16 @@ export const authenticate = async (
         userTypeType: typeof decoded.userType,
       });
 
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { userType: true },
+      });
+      if (!user) {
+        throw new AppError('User not found', 404);
+      }
+
+      req.userType = user.userType;
       req.userId = decoded.userId;
-      req.userType = decoded.userType;
       
       // Eğer userType yoksa veya undefined ise, veritabanından çek
       if (!req.userType) {

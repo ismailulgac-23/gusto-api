@@ -70,6 +70,19 @@ router.post(
         where: { phoneNumber: normalizedPhone },
       });
 
+      // Eğer kullanıcı varsa ve password yoksa, ilk giriş için otomatik parola oluştur
+      if (user && !user.password) {
+        // Rastgele 6 haneli parola oluştur (telefon numarasının son 6 hanesi + rastgele sayı)
+        const randomPassword = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        // Kullanıcının parolasını güncelle
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedPassword },
+        });
+      }
+
       if (!user) {
         // Eğer kullanıcı yoksa ve userType da yoksa, bu bir login denemesi
         // Kullanıcıyı kayıt sayfasına yönlendirmek için daha açıklayıcı hata
@@ -255,6 +268,139 @@ router.post(
       // Generate JWT
       const token = jwt.sign(
         { userId: user.id, userType: user.userType, isAdmin: user.isAdmin },
+        process.env.JWT_SECRET ?? 'secret',
+        { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' } as jwt.SignOptions
+      );
+
+      res.json({
+        success: true,
+        message: 'Giriş başarılı',
+        data: {
+          token,
+          user: {
+            id: user.id,
+            phoneNumber: user.phoneNumber,
+            name: user.name,
+            email: user.email,
+            userType: user.userType,
+            isAdmin: user.isAdmin,
+            isActive: user.isActive,
+            profileImage: user.profileImage,
+            companyName: user.companyName,
+            address: user.address,
+            categories: user.categories.map(uc => uc.category.id) || [],
+            bio: user.bio,
+            location: user.location,
+            rating: user.rating,
+            ratingCount: user.ratingCount,
+            responseTime: user.responseTime,
+            memberSince: user.memberSince,
+            completedJobs: user.completedJobs,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Check user - Telefon numarasına göre kullanıcının parolası var mı kontrol et
+router.post(
+  '/check-user',
+  [body('phoneNumber').isMobilePhone('any').withMessage('Geçersiz telefon numarası')],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { phoneNumber } = req.body;
+
+      // Telefonu normalize et
+      const normalizedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+
+      // Kullanıcıyı bul
+      const user = await prisma.user.findUnique({
+        where: { phoneNumber: normalizedPhone },
+        select: {
+          id: true,
+          phoneNumber: true,
+          password: true,
+        },
+      });
+
+      if (!user) {
+        throw new AppError('Bu telefon numarası ile kayıtlı kullanıcı bulunamadı', 404);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          hasPassword: !!user.password,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Login with Password - Telefon numarası ve parola ile giriş
+router.post(
+  '/login',
+  [
+    body('phoneNumber').isMobilePhone('any').withMessage('Geçersiz telefon numarası'),
+    body('password').isLength({ min: 1 }).withMessage('Parola gereklidir'),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { phoneNumber, password } = req.body;
+
+      // Telefonu normalize et
+      const normalizedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+
+      // Kullanıcıyı bul
+      const user = await prisma.user.findUnique({
+        where: { phoneNumber: normalizedPhone },
+        include: {
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  icon: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new AppError('Telefon numarası veya parola hatalı', 401);
+      }
+
+      // Parola kontrolü
+      if (!user.password) {
+        throw new AppError('Bu hesap için parola tanımlanmamış. Lütfen SMS ile giriş yapın.', 401);
+      }
+
+      // Parola doğrula
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new AppError('Telefon numarası veya parola hatalı', 401);
+      }
+
+      // Kullanıcı aktif mi kontrol et
+      if (!user.isActive) {
+        throw new AppError('Hesabınız pasif durumda', 403);
+      }
+
+      // Generate JWT
+      const token = jwt.sign(
+        { userId: user.id, userType: user.userType },
         process.env.JWT_SECRET ?? 'secret',
         { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' } as jwt.SignOptions
       );

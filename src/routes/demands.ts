@@ -23,13 +23,14 @@ router.get(
         throw new AppError(errors.array()[0].msg, 400);
       }
 
-      const { category, status, page = '1', limit = '10' } = req.query;
+      const { category, status, page = '1', limit = '10', cityId } = req.query;
       
       // Get current user to check type and categories
       const currentUser = await prisma.user.findUnique({
         where: { id: req.userId },
         select: { 
           userType: true,
+          cityId: true,
           categories: {
             select: {
               categoryId: true,
@@ -110,6 +111,22 @@ router.get(
       if (status) where.status = status;
       else where.status = 'ACTIVE'; // Default to active demands
 
+      // Filter by city if provided
+      if (cityId) {
+        where.cities = {
+          some: {
+            cityId: cityId as string,
+          },
+        };
+      } else if (currentUser?.userType === 'PROVIDER' && currentUser.cityId) {
+        // For providers, default to their city if no city filter provided
+        where.cities = {
+          some: {
+            cityId: currentUser.cityId,
+          },
+        };
+      }
+
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
       const skip = (pageNum - 1) * limitNum;
@@ -133,12 +150,23 @@ router.get(
                 icon: true,
               },
             },
+            cities: {
+              include: {
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                  },
+                },
+              },
+            },
             _count: {
               select: {
                 offers: true,
               },
             },
-          },
+          } as any,
           orderBy: [
             { isUrgent: 'desc' }, // Urgent first
             { createdAt: 'desc' },
@@ -189,6 +217,7 @@ router.get('/:id', async (req, res, next) => {
             name: true,
             icon: true,
             questions: true,
+            commissionRate: true
           },
         },
         offers: {
@@ -295,6 +324,11 @@ router.post(
       // Object veya Map kontrolü
       return typeof value === 'object' && !Array.isArray(value) && value !== null;
     }).withMessage('questionResponses must be an object'),
+    body('cityIds').optional().custom((value) => {
+      if (value === undefined || value === null) return true;
+      if (!Array.isArray(value)) return false;
+      return value.every((id: any) => typeof id === 'string' && id.length > 0);
+    }).withMessage('cityIds must be an array of strings'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -333,6 +367,7 @@ router.post(
         deadline,
         address,
         questionResponses,
+        cityIds,
       } = req.body;
 
       // Find category by ID or name
@@ -348,6 +383,46 @@ router.post(
 
       if (!categoryRecord) {
         throw new AppError('Kategori bulunamadı', 404);
+      }
+
+      // Validate and process cityIds
+      let processedCityIds: string[] = [];
+      if (cityIds && Array.isArray(cityIds) && cityIds.length > 0) {
+        // Validate all city IDs exist and are active
+        const cities = await prisma.city.findMany({
+          where: {
+            id: { in: cityIds },
+            isActive: true,
+          },
+        });
+
+        if (cities.length !== cityIds.length) {
+          throw new AppError('Geçersiz veya aktif olmayan şehir ID\'leri', 400);
+        }
+
+        processedCityIds = cities.map(city => city.id);
+      } else {
+        // If no cities provided, get user's city
+        const user = await prisma.user.findUnique({
+          where: { id: req.userId! },
+          select: { cityId: true },
+        });
+
+        if (user?.cityId) {
+          // Check if user's city is active
+          const userCity = await prisma.city.findUnique({
+            where: { id: user.cityId },
+          });
+
+          if (userCity && userCity.isActive) {
+            processedCityIds = [user.cityId];
+          }
+        }
+
+        // If still no cities, throw error
+        if (processedCityIds.length === 0) {
+          throw new AppError('En az bir aktif şehir seçmelisiniz', 400);
+        }
       }
 
       // Parse eventDate safely
@@ -382,7 +457,12 @@ router.post(
           deadline: deadline || null,
           address: address || null,
           questionResponses: questionResponses || null,
-        },
+          cities: {
+            create: processedCityIds.map((cityId: string) => ({
+              cityId,
+            })),
+          },
+        } as any,
         include: {
           user: {
             select: {

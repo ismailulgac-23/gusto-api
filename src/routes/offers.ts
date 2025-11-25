@@ -50,9 +50,18 @@ router.post(
         throw new AppError('Geçerli bir fiyat giriniz', 400);
       }
 
-      // Check if demand exists and is active
+      // Check if demand exists and is active, include category for commission rate
       const demand = await prisma.demand.findUnique({
         where: { id: demandId },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              commissionRate: true,
+            },
+          },
+        },
       });
 
       if (!demand) {
@@ -75,31 +84,71 @@ router.post(
         throw new AppError('You have already made an offer on this demand', 400);
       }
 
-      const offer = await prisma.offer.create({
-        data: {
-          demandId,
-          providerId: req.userId!,
-          message: message || null,
-          price: parsedPrice,
-          estimatedTime: estimatedTime,
-        },
-        include: {
-          provider: {
-            select: {
-              id: true,
-              name: true,
-              profileImage: true,
-              rating: true,
-            },
-          },
-          demand: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
+      // Get provider's current balance
+      const provider = await prisma.user.findUnique({
+        where: { id: req.userId! },
+        select: { balance: true },
       });
+
+      if (!provider) {
+        throw new AppError('Provider not found', 404);
+      }
+
+      // Calculate commission based on category commission rate
+      const commissionRate = demand.category?.commissionRate || 0; // Default 0 if no commission rate
+      const commissionAmount = (parsedPrice / 1000) * commissionRate; // Binde cinsinden
+
+      // Check if provider has enough balance
+      if (provider.balance < commissionAmount) {
+        throw new AppError(
+          `Yetersiz bakiye. Gerekli: ${commissionAmount.toFixed(2)} TL, Mevcut: ${provider.balance.toFixed(2)} TL`,
+          400
+        );
+      }
+
+      // Deduct commission from balance and create offer in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        // Update provider balance
+        await tx.user.update({
+          where: { id: req.userId! },
+          data: {
+            balance: {
+              decrement: commissionAmount,
+            },
+          },
+        });
+
+        // Create offer
+        const offer = await tx.offer.create({
+          data: {
+            demandId,
+            providerId: req.userId!,
+            message: message || null,
+            price: parsedPrice,
+            estimatedTime: estimatedTime,
+          },
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+                rating: true,
+              },
+            },
+            demand: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        });
+
+        return { offer, commissionAmount };
+      });
+
+      const offer = result.offer;
 
       // Create notification for demand owner
       await prisma.notification.create({
@@ -118,7 +167,11 @@ router.post(
       res.status(201).json({
         success: true,
         message: 'Offer created successfully',
-        data: offer,
+        data: {
+          ...offer,
+          commissionAmount: result.commissionAmount,
+          newBalance: provider.balance - result.commissionAmount,
+        },
       });
     } catch (error) {
       next(error);
@@ -342,7 +395,7 @@ router.patch(
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { status } = req.query;
-    
+
     const where: any = {};
     if (status) {
       where.status = status;

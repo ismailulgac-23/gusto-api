@@ -73,6 +73,7 @@ model User {
   completedJobs Int       @default(0)
   cityId        String?   // Şehir ID
   fcmToken      String?   // FCM token for push notifications
+  balance       Float     @default(0) // Kullanıcı bakiyesi (TL)
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -122,6 +123,7 @@ model Demand {
   user          User?         @relation("UserDemands", fields: [userId], references: [id], onDelete: Cascade)
   category      Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   offers        Offer[]
+  cities        DemandCity[]  // Many-to-many relation with City
 
   @@index([userId])
   @@index([status])
@@ -236,9 +238,27 @@ model City {
 
   // Relations
   users       User[]
+  demands     DemandCity[]  // Many-to-many relation with Demand
 
   @@index([name])
   @@index([isActive])
   @@map("cities")
+}
+
+// Junction table for Demand-City many-to-many relationship
+model DemandCity {
+  id        String   @id @default(uuid())
+  demandId  String
+  cityId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  demand    Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([demandId, cityId])
+  @@index([demandId])
+  @@index([cityId])
+  @@map("demand_cities")
 }
 

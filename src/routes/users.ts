@@ -71,6 +71,7 @@ router.put(
     body('categories').optional().isArray(),
     body('responseTime').optional().isString(),
     body('fcmToken').optional().isString(),
+    body('userType').optional().isIn(['PROVIDER', 'RECEIVER']).withMessage('Geçerli bir kullanıcı tipi giriniz (PROVIDER veya RECEIVER)'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -90,6 +91,7 @@ router.put(
         categories,
         responseTime,
         fcmToken,
+        userType,
       } = req.body;
 
       // Handle categories update
@@ -134,19 +136,26 @@ router.put(
         }
       }
 
+      const updateData: any = {
+        name,
+        email,
+        bio,
+        location,
+        profileImage,
+        companyName,
+        address,
+        responseTime,
+        fcmToken,
+      };
+
+      // Add userType if provided
+      if (userType !== undefined) {
+        updateData.userType = userType;
+      }
+
       const user = await prisma.user.update({
         where: { id: req.userId },
-        data: {
-          name,
-          email,
-          bio,
-          location,
-          profileImage,
-          companyName,
-          address,
-          responseTime,
-          fcmToken,
-        },
+        data: updateData,
         include: {
           categories: {
             include: {

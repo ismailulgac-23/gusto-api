@@ -513,7 +513,6 @@ router.post(
     body('description').isString().isLength({ min: 10 }).withMessage('Açıklama en az 10 karakter olmalıdır'),
     body('categoryId').isUUID().withMessage('Geçersiz kategori ID'),
     body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    body('budget').optional().isFloat({ min: 0 }),
     body('isUrgent').optional().isBoolean(),
   ],
   validateRequest,
@@ -528,7 +527,6 @@ router.post(
         location,
         latitude,
         longitude,
-        budget,
         images = [],
         peopleCount,
         eventDate,
@@ -567,7 +565,6 @@ router.post(
           location: location || null,
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
-          budget: budget ? parseFloat(budget) : null,
           images: Array.isArray(images) ? images : [],
           peopleCount: peopleCount ? parseInt(peopleCount) : null,
           eventDate: eventDate ? new Date(eventDate) : null,
@@ -616,7 +613,6 @@ router.patch(
     body('title').optional().isString().isLength({ min: 3, max: 200 }),
     body('description').optional().isString().isLength({ min: 10 }),
     body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    body('budget').optional().isFloat({ min: 0 }),
     body('isUrgent').optional().isBoolean(),
   ],
   validateRequest,
@@ -639,7 +635,6 @@ router.patch(
       if (req.body.location !== undefined) updateData.location = req.body.location;
       if (req.body.latitude !== undefined) updateData.latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
       if (req.body.longitude !== undefined) updateData.longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
-      if (req.body.budget !== undefined) updateData.budget = req.body.budget ? parseFloat(req.body.budget) : null;
       if (req.body.images !== undefined) updateData.images = Array.isArray(req.body.images) ? req.body.images : [];
       if (req.body.peopleCount !== undefined) updateData.peopleCount = req.body.peopleCount ? parseInt(req.body.peopleCount) : null;
       if (req.body.eventDate !== undefined) updateData.eventDate = req.body.eventDate ? new Date(req.body.eventDate) : null;
@@ -1910,13 +1905,6 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
       prisma.notification.count({ where: { isRead: false } }),
     ]);
 
-    // Calculate total budget from active demands
-    const activeDemandsWithBudget = await prisma.demand.findMany({
-      where: { status: 'ACTIVE' },
-      select: { budget: true },
-    });
-    const totalActiveBudget = activeDemandsWithBudget.reduce((sum, demand) => sum + (demand.budget || 0), 0);
-
     // Calculate total price from accepted offers
     const acceptedOffersWithPrice = await prisma.offer.findMany({
       where: { status: 'ACCEPTED' },
@@ -2038,7 +2026,6 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
       urgentDemands,
       newDemandsToday,
       newDemandsThisMonth,
-      totalActiveBudget,
       demandGrowthPercentage: Number(demandGrowthPercentage.toFixed(2)),
 
       // Offers

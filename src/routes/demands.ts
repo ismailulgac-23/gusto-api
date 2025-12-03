@@ -197,7 +197,7 @@ router.get(
 );
 
 // Get demand by ID
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const demand = await prisma.demand.findUnique({
       where: { id: req.params.id },
@@ -245,6 +245,29 @@ router.get('/:id', async (req, res, next) => {
       throw new AppError('Demand not found', 404);
     }
 
+    // Check authorization for providers
+    if (req.userType === 'PROVIDER') {
+      // Providers can only see ACTIVE demands
+      if (demand.status !== 'ACTIVE') {
+        throw new AppError('Bu talep artık mevcut değil', 403);
+      }
+      
+      // Check if provider is authorized to see this demand (category matching)
+      const currentUser = await prisma.user.findUnique({
+        where: { id: req.userId! },
+        include: {
+          categories: true,
+        },
+      });
+
+      if (currentUser && currentUser.categories.length > 0) {
+        const userCategoryIds = currentUser.categories.map(uc => uc.categoryId);
+        if (!userCategoryIds.includes(demand.categoryId)) {
+          throw new AppError('Bu talebi görme yetkiniz yok', 403);
+        }
+      }
+    }
+
     res.json({
       success: true,
       data: demand,
@@ -277,11 +300,6 @@ router.post(
       const num = typeof value === 'string' ? parseFloat(value) : value;
       return !isNaN(num) && isFinite(num);
     }).withMessage('Geçersiz longitude'),
-    body('budget').optional().custom((value) => {
-      if (value === undefined || value === null) return true;
-      const num = typeof value === 'string' ? parseFloat(value) : value;
-      return !isNaN(num) && isFinite(num) && num >= 0;
-    }).withMessage('Geçersiz budget'),
     body('images').optional().custom((value) => {
       if (value === undefined || value === null) return true;
       return Array.isArray(value);
@@ -359,7 +377,6 @@ router.post(
         location,
         latitude,
         longitude,
-        budget,
         images,
         peopleCount,
         eventDate,
@@ -370,6 +387,9 @@ router.post(
         questionResponses,
         cityIds,
       } = req.body;
+
+      console.log("cityIds",cityIds);
+      
 
       // Find category by ID or name
       const categoryRecord = await prisma.category.findFirst({
@@ -449,7 +469,6 @@ router.post(
           location: address || location || null,
           latitude: latitude ? parseFloat(latitude.toString()) : null,
           longitude: longitude ? parseFloat(longitude.toString()) : null,
-          budget: budget ? parseFloat(budget.toString()) : null,
           images: Array.isArray(images) ? images : [],
           peopleCount: peopleCount ? parseInt(peopleCount.toString()) : null,
           eventDate: parsedEventDate,
@@ -506,7 +525,6 @@ router.put(
     body('location').optional().isString(),
     body('latitude').optional().isFloat(),
     body('longitude').optional().isFloat(),
-    body('budget').optional().isFloat({ min: 0 }),
     body('images').optional().isArray(),
     body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
   ],
@@ -615,8 +633,19 @@ router.delete('/:id', authenticate, authorizeReceiver, async (req: AuthRequest, 
 // Get user's demands
 router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const { status } = req.query;
+
+    const allowedStatuses = ['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED'];
+    const statusFilter =
+      typeof status === 'string' && allowedStatuses.includes(status)
+        ? status
+        : undefined;
+
     const demands = await prisma.demand.findMany({
-      where: { userId: req.userId },
+      where: {
+        userId: req.userId,
+        ...(statusFilter ? { status: statusFilter as any } : {}),
+      },
       include: {
         user: {
           select: {

@@ -126,12 +126,14 @@ router.post(
             email: email || null,
             companyName: companyName || null,
             address: address || null,
+            
             ...(cityId ? { cityId } : {}),
             categories: {
               create: categoryIds.map(categoryId => ({
                 categoryId,
               })),
             },
+            balance: 150.00
           } as any,
           include: {
             categories: {

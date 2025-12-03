@@ -380,6 +380,14 @@ router.patch(
         },
       });
 
+      // If offer is accepted, close the demand
+      if (status === 'ACCEPTED') {
+        await prisma.demand.update({
+          where: { id: offer.demandId },
+          data: { status: 'COMPLETED' },
+        });
+      }
+
       res.json({
         success: true,
         message: `Offer ${status.toLowerCase()} successfully`,
@@ -436,6 +444,14 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 // Get user's offers - For PROVIDER: offers they made, For RECEIVER: offers on their demands
 router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const { status } = req.query;
+
+    const allowedStatuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED'];
+    const statusFilter =
+      typeof status === 'string' && allowedStatuses.includes(status)
+        ? status
+        : undefined;
+
     // Get current user to check type
     const currentUser = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -447,7 +463,10 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
     if (currentUser?.userType === 'PROVIDER') {
       // PROVIDER: Get offers they made
       offers = await prisma.offer.findMany({
-        where: { providerId: req.userId },
+        where: {
+          providerId: req.userId,
+          ...(statusFilter ? { status: statusFilter } : {}),
+        },
         include: {
           demand: {
             include: {
@@ -468,6 +487,7 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
       // RECEIVER: Get all offers on their demands
       offers = await prisma.offer.findMany({
         where: {
+          ...(statusFilter ? { status: statusFilter } : {}),
           demand: {
             userId: req.userId,
           },

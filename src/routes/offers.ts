@@ -118,7 +118,7 @@ router.post(
           },
         });
 
-        // Create offer
+        // Create offer (onay bekliyor durumunda)
         const offer = await tx.offer.create({
           data: {
             demandId,
@@ -126,6 +126,7 @@ router.post(
             message: message || null,
             price: parsedPrice,
             estimatedTime: estimatedTime,
+            isApproved: false, // Admin onayı bekliyor
           },
           include: {
             provider: {
@@ -441,13 +442,119 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
+// Provider marks offer as completed
+router.patch(
+  '/:id/complete',
+  authenticate,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const offer = await prisma.offer.findUnique({
+        where: { id: req.params.id },
+        include: {
+          demand: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  fcmToken: true,
+                },
+              },
+            },
+          },
+          provider: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!offer) {
+        throw new AppError('Offer not found', 404);
+      }
+
+      // Only provider can mark as completed
+      if (offer.providerId !== req.userId) {
+        throw new AppError('Only provider can mark offer as completed', 403);
+      }
+
+      // Offer must be accepted
+      if (offer.status !== 'ACCEPTED') {
+        throw new AppError('Only accepted offers can be marked as completed', 400);
+      }
+
+      // Already completed
+      if (offer.providerCompleted) {
+        throw new AppError('Offer already marked as completed by provider', 400);
+      }
+
+      // Update offer
+      const updatedOffer = await prisma.offer.update({
+        where: { id: req.params.id },
+        data: { 
+          providerCompleted: true,
+          status: 'COMPLETED',
+        },
+        include: {
+          demand: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          provider: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Create notification for receiver
+      await prisma.notification.create({
+        data: {
+          userId: offer.demand!.userId,
+          title: 'Hizmet Tamamlandı',
+          message: `${offer.provider?.name || 'Hizmet sağlayıcı'} işi tamamladığını onayladı. Lütfen hizmeti değerlendirin.`,
+          type: 'OFFER_COMPLETED',
+          data: {
+            offerId: offer.id,
+            demandId: offer.demandId,
+            providerId: offer.providerId,
+          },
+        },
+      });
+
+      // TODO: Send push notification if FCM token exists
+      // if (offer.demand?.user?.fcmToken) {
+      //   // Send FCM notification
+      // }
+
+      res.json({
+        success: true,
+        message: 'Offer marked as completed successfully',
+        data: updatedOffer,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Get user's offers - For PROVIDER: offers they made, For RECEIVER: offers on their demands
 router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { status } = req.query;
 
     const allowedStatuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED'];
-    const statusFilter =
+    const statusFilter: any =
       typeof status === 'string' && allowedStatuses.includes(status)
         ? status
         : undefined;
@@ -491,6 +598,7 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
           demand: {
             userId: req.userId,
           },
+          isApproved:true
         },
         include: {
           demand: {

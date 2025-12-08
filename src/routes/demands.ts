@@ -222,6 +222,9 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
           },
         },
         offers: {
+          where: req.userType === 'RECEIVER' 
+            ? { isApproved: true } // Receiver sadece onaylanmış teklifleri görebilir
+            : {}, // Provider tüm tekliflerini görebilir
           include: {
             provider: {
               select: {
@@ -348,6 +351,10 @@ router.post(
       if (!Array.isArray(value)) return false;
       return value.every((id: any) => typeof id === 'string' && id.length > 0);
     }).withMessage('cityIds must be an array of strings'),
+    body('countie').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      return typeof value === 'string';
+    }).withMessage('countie must be a string'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -386,6 +393,7 @@ router.post(
         address,
         questionResponses,
         cityIds,
+        countie,
       } = req.body;
 
       console.log("cityIds",cityIds);
@@ -460,46 +468,66 @@ router.post(
         }
       }
 
-      const demand = await prisma.demand.create({
-        data: {
-          userId: req.userId!,
-          categoryId: categoryRecord.id,
-          title,
-          description,
-          location: address || location || null,
-          latitude: latitude ? parseFloat(latitude.toString()) : null,
-          longitude: longitude ? parseFloat(longitude.toString()) : null,
-          images: Array.isArray(images) ? images : [],
-          peopleCount: peopleCount ? parseInt(peopleCount.toString()) : null,
-          eventDate: parsedEventDate,
-          eventTime: eventTime || null,
-          isUrgent: isUrgent === true || isUrgent === 'true',
-          deadline: deadline || null,
-          address: address || null,
-          questionResponses: questionResponses || null,
-          cities: {
-            create: processedCityIds.map((cityId: string) => ({
-              cityId,
-            })),
-          },
-        } as any,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              profileImage: true,
-              rating: true,
+      // Generate demand number using transaction to prevent race conditions
+      const demand = await prisma.$transaction(async (tx) => {
+        // Find the highest demandNumber and increment by 1, or start from 1000000
+        const lastDemand = await tx.demand.findFirst({
+          orderBy: { demandNumber: 'desc' },
+          select: { demandNumber: true },
+        });
+
+        const nextDemandNumber = lastDemand?.demandNumber 
+          ? lastDemand.demandNumber + 1 
+          : 1000000;
+
+        // Ensure it's 7 digits (should be between 1000000 and 9999999)
+        if (nextDemandNumber > 9999999) {
+          throw new AppError('Talep numarası limitine ulaşıldı', 500);
+        }
+
+        return await tx.demand.create({
+          data: {
+            userId: req.userId!,
+            categoryId: categoryRecord.id,
+            title,
+            description,
+            location: address || location || null,
+            latitude: latitude ? parseFloat(latitude.toString()) : null,
+            longitude: longitude ? parseFloat(longitude.toString()) : null,
+            images: Array.isArray(images) ? images : [],
+            peopleCount: peopleCount ? parseInt(peopleCount.toString()) : null,
+            eventDate: parsedEventDate,
+            eventTime: eventTime || null,
+            isUrgent: isUrgent === true || isUrgent === 'true',
+            deadline: deadline || null,
+            address: address || null,
+            questionResponses: questionResponses || null,
+            countie: countie || null,
+            demandNumber: nextDemandNumber,
+            cities: {
+              create: processedCityIds.map((cityId: string) => ({
+                cityId,
+              })),
+            },
+          } as any,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+                rating: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                icon: true,
+              },
             },
           },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              icon: true,
-            },
-          },
-        },
+        });
       });
 
       res.status(201).json({

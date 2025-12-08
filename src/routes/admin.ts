@@ -415,6 +415,17 @@ router.get(
                 },
               },
             },
+            cities: {
+              include: {
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                  },
+                },
+              },
+            },
             _count: {
               select: {
                 offers: true,
@@ -472,6 +483,17 @@ router.get('/demands/:id', authenticate, requireAdmin, async (req: AuthRequest, 
             questions: true,
           },
         },
+        cities: {
+          include: {
+            city: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+              },
+            },
+          },
+        },
         offers: {
           include: {
             provider: {
@@ -486,6 +508,11 @@ router.get('/demands/:id', authenticate, requireAdmin, async (req: AuthRequest, 
           },
           orderBy: { createdAt: 'desc' },
         },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
       },
     });
 
@@ -493,9 +520,17 @@ router.get('/demands/:id', authenticate, requireAdmin, async (req: AuthRequest, 
       throw new AppError('Talep bulunamadı', 404);
     }
 
+    // Calculate approved and pending offer counts
+    const approvedOffersCount = demand.offers.filter(offer => offer.isApproved === true).length;
+    const pendingOffersCount = demand.offers.filter(offer => offer.isApproved === false).length;
+
     res.json({
       success: true,
-      data: demand,
+      data: {
+        ...demand,
+        approvedOffersCount,
+        pendingOffersCount,
+      },
     });
   } catch (error) {
     next(error);
@@ -703,17 +738,30 @@ router.delete('/demands/:id', authenticate, requireAdmin, async (req: AuthReques
 
 // ==================== OFFERS ====================
 
-// Get all offers (Admin) - with pagination and filters
+// Get pending offers count (Admin) - for sidebar badge
+router.get('/offers/pending/count', authenticate, requireAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const count = await prisma.offer.count({
+      where: { isApproved: false },
+    });
+
+    res.json({
+      success: true,
+      data: { count },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get pending offers (Admin) - Bekleyen teklifler
 router.get(
-  '/offers',
+  '/offers/pending',
   authenticate,
   requireAdmin,
   [
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
-    query('demandId').optional().isUUID(),
-    query('providerId').optional().isUUID(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -725,12 +773,10 @@ router.get(
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const skip = (page - 1) * limit;
-      const { status, demandId, providerId } = req.query;
 
-      const where: any = {};
-      if (status) where.status = status;
-      if (demandId) where.demandId = demandId as string;
-      if (providerId) where.providerId = providerId as string;
+      const where: any = {
+        isApproved: false, // Sadece onay bekleyen teklifler
+      };
 
       const [offers, total] = await Promise.all([
         prisma.offer.findMany({
@@ -743,6 +789,7 @@ router.get(
                 phoneNumber: true,
                 profileImage: true,
                 rating: true,
+                companyName: true,
               },
             },
             demand: {
@@ -750,6 +797,95 @@ router.get(
                 id: true,
                 title: true,
                 status: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phoneNumber: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.offer.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: offers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get all offers (Admin) - with pagination and filters
+router.get(
+  '/offers',
+  authenticate,
+  requireAdmin,
+  [
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    query('demandId').optional().isUUID(),
+    query('providerId').optional().isUUID(),
+    query('isApproved').optional().isBoolean(),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const { status, demandId, providerId, isApproved } = req.query;
+
+      const where: any = {};
+      if (status) where.status = status;
+      if (demandId) where.demandId = demandId as string;
+      if (providerId) where.providerId = providerId as string;
+      if (isApproved !== undefined) where.isApproved = isApproved === 'true';
+
+      const [offers, total] = await Promise.all([
+        prisma.offer.findMany({
+          where,
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+                profileImage: true,
+                rating: true,
+                companyName: true,
+              },
+            },
+            demand: {
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -912,6 +1048,91 @@ router.post(
   }
 );
 
+// Approve/Reject offer (Admin)
+router.patch(
+  '/offers/:id/approval',
+  authenticate,
+  requireAdmin,
+  [
+    body('isApproved').isBoolean().withMessage('isApproved boolean olmalıdır'),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const offer = await prisma.offer.findUnique({
+        where: { id: req.params.id },
+        include: {
+          demand: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+
+      if (!offer) {
+        throw new AppError('Teklif bulunamadı', 404);
+      }
+
+      const { isApproved } = req.body;
+
+      const updatedOffer = await prisma.offer.update({
+        where: { id: req.params.id },
+        data: { isApproved },
+        include: {
+          provider: {
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+              profileImage: true,
+              rating: true,
+              companyName: true,
+            },
+          },
+          demand: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Onaylandığında receiver'a bildirim gönder
+      if (isApproved) {
+        await prisma.notification.create({
+          data: {
+            userId: offer.demand!.userId,
+            title: 'Yeni Teklif Onaylandı',
+            message: `${updatedOffer.provider?.name || 'Bir sağlayıcı'} talebinize verdiği teklif onaylandı`,
+            type: 'OFFER_APPROVED',
+            data: {
+              offerId: offer.id,
+              demandId: offer.demandId,
+            },
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        message: isApproved ? 'Teklif onaylandı' : 'Teklif reddedildi',
+        data: updatedOffer,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Update offer (Admin)
 router.patch(
   '/offers/:id',
@@ -922,6 +1143,7 @@ router.patch(
     body('price').optional().isFloat({ min: 0 }),
     body('estimatedTime').optional().isString(),
     body('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    body('isApproved').optional().isBoolean(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -939,6 +1161,7 @@ router.patch(
       if (req.body.price !== undefined) updateData.price = parseFloat(req.body.price);
       if (req.body.estimatedTime !== undefined) updateData.estimatedTime = req.body.estimatedTime;
       if (req.body.status !== undefined) updateData.status = req.body.status;
+      if (req.body.isApproved !== undefined) updateData.isApproved = req.body.isApproved;
 
       const updatedOffer = await prisma.offer.update({
         where: { id: req.params.id },

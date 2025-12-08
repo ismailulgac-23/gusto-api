@@ -30,18 +30,18 @@ model Category {
   id             String   @id @default(uuid())
   name           String   @unique
   icon           String?
-  questions      Json?    // Dinamik soru kalıpları
-  parentId       String?  // Üst kategori ID (self-referential)
-  commissionRate Float?   // Komisyon oranı (binde cinsinden, örn: 5 = binde 5)
+  questions      Json? // Dinamik soru kalıpları
+  parentId       String? // Üst kategori ID (self-referential)
+  commissionRate Float? // Komisyon oranı (binde cinsinden, örn: 5 = binde 5)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
-  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Category[] @relation("CategoryHierarchy")
-  demands     Demand[]
-  users       UserCategory[]
+  parent            Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children          Category[]        @relation("CategoryHierarchy")
+  demands           Demand[]
+  users             UserCategory[]
   charityActivities CharityActivity[]
 
   @@index([name])
@@ -51,42 +51,42 @@ model Category {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  phoneNumber   String    @unique
-  name          String?
-  email         String?   @unique
-  password      String?   // Admin login için
-  userType      UserType
-  isAdmin       Boolean   @default(false) // Admin kontrolü
-  profileImage  String?
-  bio           String?
-  location      String?
-  rating        Float     @default(0)
-  ratingCount   Int       @default(0)
-  isActive      Boolean   @default(true)
-  
+  id           String   @id @default(uuid())
+  phoneNumber  String   @unique
+  name         String?
+  email        String?  @unique
+  password     String? // Admin login için
+  userType     UserType
+  isAdmin      Boolean  @default(false) // Admin kontrolü
+  profileImage String?
+  bio          String?
+  location     String?
+  rating       Float    @default(0)
+  ratingCount  Int      @default(0)
+  isActive     Boolean  @default(true)
+
   // Ek alanlar - Flutter uygulaması için
-  companyName   String?   // Firma adı (PROVIDER için)
-  address       String?   // Adres
-  responseTime  String?   // Yanıt süresi
-  memberSince   String?   // Üyelik tarihi
-  completedJobs Int       @default(0)
-  cityId        String?   // Şehir ID
-  fcmToken      String?   // FCM token for push notifications
-  balance       Float     @default(0) // Kullanıcı bakiyesi (TL)
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  companyName   String? // Firma adı (PROVIDER için)
+  address       String? // Adres
+  responseTime  String? // Yanıt süresi
+  memberSince   String? // Üyelik tarihi
+  completedJobs Int     @default(0)
+  cityId        String? // Şehir ID
+  fcmToken      String? // FCM token for push notifications
+  balance       Float   @default(0) // Kullanıcı bakiyesi (TL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  demands       Demand[]        @relation("UserDemands")
-  offers        Offer[]         @relation("UserOffers")
-  notifications Notification[]
-  reviews       Review[]        @relation("ReviewsByUser")
-  reviewsReceived Review[]      @relation("ReviewsForUser")
-  categories    UserCategory[]  // İş kategorileri (PROVIDER için - çoklu)
+  demands           Demand[]          @relation("UserDemands")
+  offers            Offer[]           @relation("UserOffers")
+  notifications     Notification[]
+  reviews           Review[]          @relation("ReviewsByUser")
+  reviewsReceived   Review[]          @relation("ReviewsForUser")
+  categories        UserCategory[] // İş kategorileri (PROVIDER için - çoklu)
   charityActivities CharityActivity[] @relation("CharityActivities")
-  city          City?           @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  city              City?             @relation(fields: [cityId], references: [id], onDelete: SetNull)
 
   @@index([phoneNumber])
   @@index([userType])
@@ -94,77 +94,87 @@ model User {
 }
 
 model Demand {
-  id            String        @id @default(uuid())
-  userId        String
-  title         String
-  description   String
-  categoryId    String
-  location      String?
-  latitude      Float?
-  longitude     Float?
-  images        String[]
-  status        DemandStatus  @default(ACTIVE)
-  
+  id           String       @id @default(uuid())
+  userId       String
+  title        String
+  description  String
+  categoryId   String
+  location     String?
+  latitude     Float?
+  longitude    Float?
+  images       String[]
+  status       DemandStatus @default(ACTIVE)
+  demandNumber Int?         @unique // 7 haneli talep numarası (1000000'den başlar)
+
   // Ek alanlar - Flutter uygulaması için
-  peopleCount       Int?          // Kişi sayısı
-  eventDate         DateTime?     // Etkinlik tarihi
-  eventTime         String?       // Etkinlik saati
-  isUrgent          Boolean       @default(false)
-  deadline          String?       // Teslim süresi
-  address           String?       // Detaylı adres
-  questionResponses Json?         // Dinamik soru cevapları
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  expiresAt     DateTime?
+  peopleCount       Int? // Kişi sayısı
+  eventDate         DateTime? // Etkinlik tarihi
+  eventTime         String? // Etkinlik saati
+  isUrgent          Boolean   @default(false)
+  deadline          String? // Teslim süresi
+  address           String? // Detaylı adres
+  questionResponses Json? // Dinamik soru cevapları
+  countie           String? // İlçe
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
 
   // Relations
-  user          User?         @relation("UserDemands", fields: [userId], references: [id], onDelete: Cascade)
-  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  offers        Offer[]
-  cities        DemandCity[]  // Many-to-many relation with City
+  user     User?        @relation("UserDemands", fields: [userId], references: [id], onDelete: Cascade)
+  category Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  offers   Offer[]
+  cities   DemandCity[] // Many-to-many relation with City
 
   @@index([userId])
   @@index([status])
   @@index([categoryId])
   @@index([createdAt])
   @@index([isUrgent])
+  @@index([demandNumber])
   @@map("demands")
 }
 
 model Offer {
-  id            String        @id @default(uuid())
-  demandId      String
-  providerId    String
-  message       String?
-  price         Float?
-  estimatedTime String?
-  status        OfferStatus   @default(PENDING)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                String      @id @default(uuid())
+  demandId          String
+  providerId        String
+  message           String?
+  price             Float?
+  estimatedTime     String?
+  status            OfferStatus @default(PENDING)
+  isApproved        Boolean     @default(false) // Admin onayı
+  providerCompleted Boolean     @default(false) // Provider işi tamamladığını onayladı
+  receiverCompleted Boolean     @default(false) // Receiver işi tamamladığını onayladı
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   // Relations
-  demand        Demand?       @relation(fields: [demandId], references: [id], onDelete: Cascade)
-  provider      User?         @relation("UserOffers", fields: [providerId], references: [id], onDelete: Cascade)
+  demand   Demand?  @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  provider User?    @relation("UserOffers", fields: [providerId], references: [id], onDelete: Cascade)
+  reviews  Review[] // Offer bazlı puanlamalar
 
   @@index([demandId])
   @@index([providerId])
   @@index([status])
+  @@index([isApproved])
+  @@index([providerCompleted])
+  @@index([receiverCompleted])
   @@map("offers")
 }
 
 model Notification {
-  id            String    @id @default(uuid())
-  userId        String
-  title         String
-  message       String
-  type          String
-  isRead        Boolean   @default(false)
-  data          Json?
-  createdAt     DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
 
   // Relations
-  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
@@ -173,19 +183,23 @@ model Notification {
 }
 
 model Review {
-  id            String    @id @default(uuid())
-  reviewerId    String
+  id             String   @id @default(uuid())
+  offerId        String?  // Hangi offer için puanlama yapıldı
+  reviewerId     String
   reviewedUserId String
-  rating        Int
-  comment       String?
-  createdAt     DateTime  @default(now())
+  rating         Int
+  comment        String?
+  createdAt      DateTime @default(now())
 
   // Relations
-  reviewer      User?     @relation("ReviewsByUser", fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewedUser  User?     @relation("ReviewsForUser", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+  offer       Offer? @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  reviewer    User?  @relation("ReviewsByUser", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser User? @relation("ReviewsForUser", fields: [reviewedUserId], references: [id], onDelete: Cascade)
 
   @@index([reviewerId])
   @@index([reviewedUserId])
+  @@index([offerId])
+  @@unique([offerId, reviewerId]) // Aynı offer için aynı kişi birden fazla puanlama yapamaz
   @@map("reviews")
 }
 
@@ -196,8 +210,8 @@ model UserCategory {
   createdAt  DateTime @default(now())
 
   // Relations
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, categoryId])
   @@index([userId])
@@ -206,21 +220,21 @@ model UserCategory {
 }
 
 model CharityActivity {
-  id            String    @id @default(uuid())
-  providerId    String
-  categoryId    String
-  title         String
-  description   String
-  latitude      Float
-  longitude     Float
-  address       String
+  id               String    @id @default(uuid())
+  providerId       String
+  categoryId       String
+  title            String
+  description      String
+  latitude         Float
+  longitude        Float
+  address          String
   estimatedEndTime DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
-  provider      User      @relation("CharityActivities", fields: [providerId], references: [id], onDelete: Cascade)
-  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  provider User     @relation("CharityActivities", fields: [providerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@index([providerId])
   @@index([categoryId])
@@ -229,15 +243,15 @@ model CharityActivity {
 }
 
 model City {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  isActive    Boolean  @default(false) // Uygulamanın aktif olduğu şehirler
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(false) // Uygulamanın aktif olduğu şehirler
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  users       User[]
-  demands     DemandCity[]  // Many-to-many relation with Demand
+  users   User[]
+  demands DemandCity[] // Many-to-many relation with Demand
 
   @@index([name])
   @@index([isActive])
@@ -252,12 +266,11 @@ model DemandCity {
   createdAt DateTime @default(now())
 
   // Relations
-  demand    Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
-  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  demand Demand @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
 
   @@unique([demandId, cityId])
   @@index([demandId])
   @@index([cityId])
   @@map("demand_cities")
 }
-

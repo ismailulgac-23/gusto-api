@@ -19,7 +19,7 @@ import adminRouter from './routes/admin';
 import settingsRouter from './routes/settings';
 import adminNotificationsRouter from './routes/admin_notifications';
 import { initializeFirebase } from './services/fcm.service';
-import { hashSync } from 'bcrypt';
+import locationRoutes from './routes/location-routes';
 
 
 dotenv.config();
@@ -81,6 +81,7 @@ app.use('/api/charity-activities', charityActivitiesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
+app.use('/api/locations', locationRoutes);
 
 // Initialize Firebase
 initializeFirebase();

@@ -118,7 +118,7 @@ router.post(
           },
         });
 
-        // Create offer (onay bekliyor durumunda)
+        // Create offer (otomatik onaylanıyor)
         const offer = await tx.offer.create({
           data: {
             demandId,
@@ -126,7 +126,7 @@ router.post(
             message: message || null,
             price: parsedPrice,
             estimatedTime: estimatedTime,
-            isApproved: false, // Admin onayı bekliyor
+            isApproved: true, // Teklifler direkt onaylanıyor
           },
           include: {
             provider: {
@@ -598,7 +598,7 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
           demand: {
             userId: req.userId,
           },
-          isApproved:true
+          // Teklifler artık direkt onaylanıyor, filtre gerek yok
         },
         include: {
           demand: {

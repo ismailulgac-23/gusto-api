@@ -105,6 +105,7 @@ model Demand {
   images       String[]
   status       DemandStatus @default(ACTIVE)
   demandNumber Int?         @unique // 7 haneli talep numarası (1000000'den başlar)
+  isApproved   Boolean      @default(false) // Admin onayı
 
   // Ek alanlar - Flutter uygulaması için
   peopleCount       Int? // Kişi sayısı
@@ -132,6 +133,7 @@ model Demand {
   @@index([createdAt])
   @@index([isUrgent])
   @@index([demandNumber])
+  @@index([isApproved])
   @@map("demands")
 }
 
@@ -143,7 +145,7 @@ model Offer {
   price             Float?
   estimatedTime     String?
   status            OfferStatus @default(PENDING)
-  isApproved        Boolean     @default(false) // Admin onayı
+  isApproved        Boolean     @default(true) // Admin onayı
   providerCompleted Boolean     @default(false) // Provider işi tamamladığını onayladı
   receiverCompleted Boolean     @default(false) // Receiver işi tamamladığını onayladı
   createdAt         DateTime    @default(now())

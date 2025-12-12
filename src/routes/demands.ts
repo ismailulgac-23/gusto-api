@@ -110,6 +110,11 @@ router.get(
       
       if (status) where.status = status;
       else where.status = 'ACTIVE'; // Default to active demands
+      
+      // Provider'lar sadece onaylanmış talepleri görebilir
+      if (currentUser?.userType === 'PROVIDER') {
+        where.isApproved = true;
+      }
 
       // Filter by city if provided
       if (cityId) {
@@ -222,9 +227,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
           },
         },
         offers: {
-          where: req.userType === 'RECEIVER' 
-            ? { isApproved: true } // Receiver sadece onaylanmış teklifleri görebilir
-            : {}, // Provider tüm tekliflerini görebilir
+          // Teklifler artık direkt onaylanıyor, filtre gerek yok
           include: {
             provider: {
               select: {
@@ -250,9 +253,14 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
 
     // Check authorization for providers
     if (req.userType === 'PROVIDER') {
-      // Providers can only see ACTIVE demands
+      // Providers can only see ACTIVE and APPROVED demands
       if (demand.status !== 'ACTIVE') {
         throw new AppError('Bu talep artık mevcut değil', 403);
+      }
+      
+      // Provider'lar sadece onaylanmış talepleri görebilir
+      if (!demand.isApproved) {
+        throw new AppError('Bu talep henüz onaylanmamış', 403);
       }
       
       // Check if provider is authorized to see this demand (category matching)
@@ -504,6 +512,7 @@ router.post(
             questionResponses: questionResponses || null,
             countie: countie || null,
             demandNumber: nextDemandNumber,
+            isApproved: false, // Admin onayı bekliyor
             cities: {
               create: processedCityIds.map((cityId: string) => ({
                 cityId,

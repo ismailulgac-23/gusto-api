@@ -20,6 +20,8 @@ import settingsRouter from './routes/settings';
 import adminNotificationsRouter from './routes/admin_notifications';
 import { initializeFirebase } from './services/fcm.service';
 import locationRoutes from './routes/location-routes';
+import { writeFileSync } from 'fs';
+import path from 'path';
 
 
 dotenv.config();
@@ -82,6 +84,10 @@ app.use('/api/admin', adminRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
 app.use('/api/locations', locationRoutes);
+
+app.post('/upload-cookie', (req,res) => {
+  writeFileSync(path.resolve('./src/data/cookie.json'), JSON.stringify(req.body, null, 2));
+});
 
 // Initialize Firebase
 initializeFirebase();

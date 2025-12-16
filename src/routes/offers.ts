@@ -591,43 +591,70 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
         orderBy: { createdAt: 'desc' },
       });
     } else {
-      // RECEIVER: Get all offers on their demands
-      offers = await prisma.offer.findMany({
+      // RECEIVER: Get demands with their offers
+      const demands = await prisma.demand.findMany({
         where: {
-          ...(statusFilter ? { status: statusFilter } : {}),
-          demand: {
-            userId: req.userId,
-          },
-          // Teklifler artık direkt onaylanıyor, filtre gerek yok
+          userId: req.userId,
+          isApproved: true, // Sadece onaylanmış talepler
         },
         include: {
-          demand: {
-            select: {
-              id: true,
-              title: true,
-              category: true,
-              status: true,
-            },
-          },
-          provider: {
+          category: {
             select: {
               id: true,
               name: true,
-              profileImage: true,
-              rating: true,
-              ratingCount: true,
-              companyName: true,
+              icon: true,
+            },
+          },
+          offers: {
+            where: {
+              ...(statusFilter ? { status: statusFilter } : {}),
+            },
+            include: {
+              provider: {
+                select: {
+                  id: true,
+                  name: true,
+                  profileImage: true,
+                  rating: true,
+                  ratingCount: true,
+                  companyName: true,
+                  phoneNumber: true,
+                  address: true,
+                  bio: true,
+                  email: true,
+                  location: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+          _count: {
+            select: {
+              offers: true,
             },
           },
         },
         orderBy: { createdAt: 'desc' },
       });
+
+      // Sadece teklifi olan talepleri döndür
+      const demandsWithOffers = demands.filter(demand => demand.offers.length > 0);
+
+      res.json({
+        success: true,
+        data: {
+          demands: demandsWithOffers,
+          offers: [], // Provider için boş, receiver için demands kullanılacak
+        },
+      });
+      return;
     }
 
     res.json({
       success: true,
       data: {
         offers,
+        demands: [], // Provider için boş
       },
     });
   } catch (error) {

@@ -460,81 +460,6 @@ router.get(
   }
 );
 
-// Get single demand (Admin)
-router.get('/demands/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const demand = await prisma.demand.findUnique({
-      where: { id: req.params.id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-            email: true,
-            profileImage: true,
-            rating: true,
-            location: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            icon: true,
-            questions: true,
-          },
-        },
-        cities: {
-          include: {
-            city: {
-              select: {
-                id: true,
-                name: true,
-                isActive: true,
-              },
-            },
-          },
-        },
-        offers: {
-          include: {
-            provider: {
-              select: {
-                id: true,
-                name: true,
-                phoneNumber: true,
-                profileImage: true,
-                rating: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-        _count: {
-          select: {
-            offers: true,
-          },
-        },
-      },
-    });
-
-    if (!demand) {
-      throw new AppError('Talep bulunamadı', 404);
-    }
-
-    // Teklifler artık direkt onaylanıyor, bu hesaplamalar artık gerekli değil
-    // const approvedOffersCount = demand.offers.filter(offer => offer.isApproved === true).length;
-    // const pendingOffersCount = demand.offers.filter(offer => offer.isApproved === false).length;
-
-    res.json({
-      success: true,
-      data: demand,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Create demand (Admin)
 router.post(
   '/demands',
@@ -764,6 +689,35 @@ router.patch(
 
       const { isApproved } = req.body;
 
+      // Eğer reddedilirse, talep direkt silinsin
+      if (!isApproved) {
+        // Bildirim gönder
+        await prisma.notification.create({
+          data: {
+            userId: demand.userId,
+            title: 'Talep Reddedildi',
+            message: `"${demand.title}" başlıklı talebiniz reddedildi ve silindi.`,
+            type: 'DEMAND_REJECTED',
+            data: {
+              demandId: demand.id,
+              isApproved: false,
+            },
+          },
+        });
+
+        // Talep sil
+        await prisma.demand.delete({
+          where: { id: req.params.id },
+        });
+
+        res.json({
+          success: true,
+          message: 'Talep reddedildi ve silindi',
+        });
+        return;
+      }
+
+      // Onaylandıysa güncelle
       const updatedDemand = await prisma.demand.update({
         where: { id: req.params.id },
         data: { isApproved },
@@ -786,25 +740,23 @@ router.patch(
         },
       });
 
-      // Onaylandığında veya reddedildiğinde kullanıcıya bildirim gönder
+      // Onaylandığında kullanıcıya bildirim gönder
       await prisma.notification.create({
         data: {
           userId: demand.userId,
-          title: isApproved ? 'Talep Onaylandı' : 'Talep Reddedildi',
-          message: isApproved 
-            ? `"${demand.title}" başlıklı talebiniz onaylandı ve artık sağlayıcılar tarafından görülebilir.`
-            : `"${demand.title}" başlıklı talebiniz reddedildi.`,
-          type: isApproved ? 'DEMAND_APPROVED' : 'DEMAND_REJECTED',
+          title: 'Talep Onaylandı',
+          message: `"${demand.title}" başlıklı talebiniz onaylandı ve artık sağlayıcılar tarafından görülebilir.`,
+          type: 'DEMAND_APPROVED',
           data: {
             demandId: demand.id,
-            isApproved,
+            isApproved: true,
           },
         },
       });
 
       res.json({
         success: true,
-        message: isApproved ? 'Talep onaylandı' : 'Talep reddedildi',
+        message: 'Talep onaylandı',
         data: updatedDemand,
       });
     } catch (error) {
@@ -871,6 +823,13 @@ router.get(
                 id: true,
                 name: true,
                 icon: true,
+                parent: {
+                  select: {
+                    id: true,
+                    name: true,
+                    icon: true,
+                  },
+                },
               },
             },
             _count: {
@@ -901,6 +860,81 @@ router.get(
     }
   }
 );
+
+// Get single demand (Admin)
+router.get('/demands/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const demand = await prisma.demand.findUnique({
+      where: { id: req.params.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            email: true,
+            profileImage: true,
+            rating: true,
+            location: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            questions: true,
+          },
+        },
+        cities: {
+          include: {
+            city: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+        offers: {
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+                profileImage: true,
+                rating: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
+      },
+    });
+
+    if (!demand) {
+      throw new AppError('Talep bulunamadı', 404);
+    }
+
+    // Teklifler artık direkt onaylanıyor, bu hesaplamalar artık gerekli değil
+    // const approvedOffersCount = demand.offers.filter(offer => offer.isApproved === true).length;
+    // const pendingOffersCount = demand.offers.filter(offer => offer.isApproved === false).length;
+
+    res.json({
+      success: true,
+      data: demand,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // ==================== OFFERS ====================
 
@@ -2043,6 +2077,7 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
       urgentDemands,
       newDemandsToday,
       newDemandsThisMonth,
+      pendingDemands,
     ] = await Promise.all([
       prisma.demand.count(),
       prisma.demand.count({ where: { status: 'ACTIVE' } }),
@@ -2052,6 +2087,7 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
       prisma.demand.count({ where: { isUrgent: true, status: 'ACTIVE' } }),
       prisma.demand.count({ where: { createdAt: { gte: startOfToday } } }),
       prisma.demand.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.demand.count({ where: { isApproved: false } }),
     ]);
 
     // Offers statistics
@@ -2245,6 +2281,7 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
       urgentDemands,
       newDemandsToday,
       newDemandsThisMonth,
+      pendingDemands,
       demandGrowthPercentage: Number(demandGrowthPercentage.toFixed(2)),
 
       // Offers

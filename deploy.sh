@@ -9,7 +9,7 @@ echo "🚀 Starting deployment..."
 
 # Git credentials
 GIT_USERNAME="ismailulgac-23"
-GIT_TOKEN="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"
+GIT_TOKEN="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"
 
 # Get current directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

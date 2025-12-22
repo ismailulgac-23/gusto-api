@@ -38,8 +38,13 @@ router.get(
   requireAdmin,
   [
     query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('isActive').optional().isBoolean(),
+    query('limit').optional().isInt({ min: 1, max: 10000 }),
+    query('isActive').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      if (typeof value === 'boolean') return true;
+      if (value === 'true' || value === 'false') return true;
+      return false;
+    }),
     query('search').optional().isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -569,9 +574,44 @@ router.patch(
   requireAdmin,
   [
     body('title').optional().isString().isLength({ min: 3, max: 200 }),
-    body('description').optional().isString().isLength({ min: 10 }),
     body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    body('isUrgent').optional().isBoolean(),
+    body('isUrgent').optional().custom((value) => {
+      if (value === undefined || value === null) return true;
+      if (typeof value === 'boolean') return true;
+      if (value === 'true' || value === 'false') return true;
+      if (value === true || value === false) return true;
+      return false;
+    }).withMessage('isUrgent boolean olmalıdır'),
+    body('categoryId').optional().isUUID().withMessage('Geçersiz kategori ID'),
+    body('userId').optional().isUUID().withMessage('Geçersiz kullanıcı ID'),
+    body('location').optional().isString(),
+    body('address').optional().isString(),
+    body('latitude').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      return !isNaN(num) && isFinite(num);
+    }).withMessage('latitude geçerli bir sayı olmalıdır'),
+    body('longitude').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      return !isNaN(num) && isFinite(num);
+    }).withMessage('longitude geçerli bir sayı olmalıdır'),
+    body('eventDate').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      const date = new Date(value);
+      return !isNaN(date.getTime());
+    }).withMessage('eventDate geçerli bir tarih olmalıdır'),
+    body('eventTime').optional().isString(),
+    body('cityIds').optional().custom((value) => {
+      if (value === undefined || value === null) return true;
+      return Array.isArray(value);
+    }).withMessage('cityIds bir array olmalıdır'),
+    body('cityIds.*').optional().isUUID().withMessage('Geçersiz şehir ID'),
+    body('countie').optional().isString(),
+    body('questionResponses').optional().custom((value) => {
+      if (value === undefined || value === null) return true;
+      return typeof value === 'object' && !Array.isArray(value);
+    }).withMessage('questionResponses bir object olmalıdır'),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -586,42 +626,120 @@ router.patch(
 
       const updateData: any = {};
       if (req.body.title !== undefined) updateData.title = req.body.title;
-      if (req.body.description !== undefined) updateData.description = req.body.description;
       if (req.body.status !== undefined) updateData.status = req.body.status;
       if (req.body.categoryId !== undefined) updateData.categoryId = req.body.categoryId;
       if (req.body.userId !== undefined) updateData.userId = req.body.userId;
       if (req.body.location !== undefined) updateData.location = req.body.location;
-      if (req.body.latitude !== undefined) updateData.latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
-      if (req.body.longitude !== undefined) updateData.longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
+      if (req.body.latitude !== undefined) {
+        updateData.latitude = req.body.latitude !== null && req.body.latitude !== '' 
+          ? parseFloat(req.body.latitude.toString()) 
+          : null;
+      }
+      if (req.body.longitude !== undefined) {
+        updateData.longitude = req.body.longitude !== null && req.body.longitude !== '' 
+          ? parseFloat(req.body.longitude.toString()) 
+          : null;
+      }
       if (req.body.images !== undefined) updateData.images = Array.isArray(req.body.images) ? req.body.images : [];
-      if (req.body.peopleCount !== undefined) updateData.peopleCount = req.body.peopleCount ? parseInt(req.body.peopleCount) : null;
-      if (req.body.eventDate !== undefined) updateData.eventDate = req.body.eventDate ? new Date(req.body.eventDate) : null;
+      if (req.body.eventDate !== undefined) {
+        updateData.eventDate = req.body.eventDate && req.body.eventDate !== '' 
+          ? new Date(req.body.eventDate) 
+          : null;
+      }
       if (req.body.eventTime !== undefined) updateData.eventTime = req.body.eventTime || null;
-      if (req.body.isUrgent !== undefined) updateData.isUrgent = req.body.isUrgent;
-      if (req.body.deadline !== undefined) updateData.deadline = req.body.deadline || null;
+      if (req.body.isUrgent !== undefined) {
+        // Handle both boolean and string values
+        if (typeof req.body.isUrgent === 'boolean') {
+          updateData.isUrgent = req.body.isUrgent;
+        } else if (typeof req.body.isUrgent === 'string') {
+          updateData.isUrgent = req.body.isUrgent === 'true';
+        } else {
+          updateData.isUrgent = Boolean(req.body.isUrgent);
+        }
+      }
       if (req.body.address !== undefined) updateData.address = req.body.address || null;
-      if (req.body.questionResponses !== undefined) updateData.questionResponses = req.body.questionResponses || null;
+      if (req.body.questionResponses !== undefined) {
+        updateData.questionResponses = req.body.questionResponses && typeof req.body.questionResponses === 'object' && !Array.isArray(req.body.questionResponses)
+          ? req.body.questionResponses 
+          : null;
+      }
+      if (req.body.countie !== undefined) updateData.countie = req.body.countie || null;
 
-      const updatedDemand = await prisma.demand.update({
-        where: { id: req.params.id },
-        data: updateData,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              phoneNumber: true,
-              profileImage: true,
+      // Handle cityIds update - delete existing and create new
+      let processedCityIds: string[] = [];
+      if (req.body.cityIds !== undefined && Array.isArray(req.body.cityIds) && req.body.cityIds.length > 0) {
+        // Validate all city IDs exist and are active
+        const cities = await prisma.city.findMany({
+          where: {
+            id: { in: req.body.cityIds },
+            isActive: true,
+          },
+        });
+
+        if (cities.length !== req.body.cityIds.length) {
+          throw new AppError("Geçersiz veya aktif olmayan şehir ID'leri", 400);
+        }
+
+        processedCityIds = cities.map((city) => city.id);
+      }
+
+      const updatedDemand = await prisma.$transaction(async (tx) => {
+        // Update demand
+        const demand = await tx.demand.update({
+          where: { id: req.params.id },
+          data: updateData,
+        });
+
+        // Update cities if provided
+        if (req.body.cityIds !== undefined) {
+          // Delete existing city relations
+          await tx.demandCity.deleteMany({
+            where: { demandId: req.params.id },
+          });
+
+          // Create new city relations
+          if (processedCityIds.length > 0) {
+            await tx.demandCity.createMany({
+              data: processedCityIds.map((cityId: string) => ({
+                demandId: req.params.id,
+                cityId,
+              })),
+            });
+          }
+        }
+
+        // Return updated demand with relations
+        return await tx.demand.findUnique({
+          where: { id: req.params.id },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+                profileImage: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                icon: true,
+              },
+            },
+            cities: {
+              include: {
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                  },
+                },
+              },
             },
           },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              icon: true,
-            },
-          },
-        },
+        });
       });
 
       res.json({
@@ -1698,10 +1816,20 @@ router.get(
   requireAdmin,
   [
     query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('limit').optional().isInt({ min: 1, max: 10000 }),
     query('userType').optional().isIn(['PROVIDER', 'RECEIVER']),
-    query('isActive').optional().isBoolean(),
-    query('isAdmin').optional().isBoolean(),
+    query('isActive').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      if (typeof value === 'boolean') return true;
+      if (value === 'true' || value === 'false') return true;
+      return false;
+    }),
+    query('isAdmin').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      if (typeof value === 'boolean') return true;
+      if (value === 'true' || value === 'false') return true;
+      return false;
+    }),
     query('search').optional().isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {

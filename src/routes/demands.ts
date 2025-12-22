@@ -119,7 +119,6 @@ router.get(
       }
 
       if (status) where.status = status;
-      else where.status = "ACTIVE"; // Default to active demands
 
       // Provider'lar sadece onaylanmış talepleri görebilir
       if (currentUser?.userType === "PROVIDER") {
@@ -145,6 +144,8 @@ router.get(
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
       const skip = (pageNum - 1) * limitNum;
+
+      
 
       const [demands, total] = await Promise.all([
         prisma.demand.findMany({
@@ -184,7 +185,6 @@ router.get(
             },
           },
           orderBy: [
-            { isUrgent: "desc" }, // Urgent first
             { createdAt: "desc" },
           ],
           skip,
@@ -261,10 +261,6 @@ router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
       throw new AppError("Demand not found", 404);
     }
 
-    if (demand.status !== "ACTIVE") {
-      throw new AppError("Bu talep artık mevcut değil", 403);
-    }
-
     if (!demand.isApproved) {
       throw new AppError("Bu talep henüz onaylanmamış", 403);
     }
@@ -299,10 +295,6 @@ router.post(
   authorizeReceiver,
   [
     body("title").isString().isLength({ min: 3, max: 200 }),
-    body("description")
-      .isString()
-      .isLength({ min: 10, max: 2000 })
-      .withMessage("Açıklama en az 10 karakter olmalıdır"),
     body("category").isString().withMessage("Kategori zorunludur"), // Can be category ID or name
     body("location")
       .optional()
@@ -365,15 +357,6 @@ router.post(
         return typeof value === "string";
       })
       .withMessage("eventTime must be a string"),
-    body("isUrgent")
-      .optional()
-      .custom((value) => {
-        if (value === undefined || value === null) return true;
-        return (
-          typeof value === "boolean" || value === "true" || value === "false"
-        );
-      })
-      .withMessage("Geçersiz isUrgent"),
     body("deadline")
       .optional()
       .custom((value) => {
@@ -447,7 +430,6 @@ router.post(
 
       const {
         title,
-        description,
         category,
         location,
         latitude,
@@ -456,7 +438,6 @@ router.post(
         peopleCount,
         eventDate,
         eventTime,
-        isUrgent,
         deadline,
         address,
         questionResponses,
@@ -554,7 +535,7 @@ router.post(
             userId: req.userId!,
             categoryId: categoryRecord.id,
             title,
-            description,
+            description: '', // Boş string olarak ayarla (zorunlu alan)
             location: address || location || null,
             latitude: latitude ? parseFloat(latitude.toString()) : null,
             longitude: longitude ? parseFloat(longitude.toString()) : null,
@@ -562,7 +543,7 @@ router.post(
             peopleCount: peopleCount ? parseInt(peopleCount.toString()) : null,
             eventDate: parsedEventDate,
             eventTime: eventTime || null,
-            isUrgent: isUrgent === true || isUrgent === "true",
+            isUrgent: false, // Varsayılan değer
             deadline: deadline || null,
             address: address || null,
             questionResponses: questionResponses || null,
@@ -613,7 +594,6 @@ router.put(
   authorizeReceiver,
   [
     body("title").optional().isString().isLength({ min: 3, max: 200 }),
-    body("description").optional().isString().isLength({ min: 10, max: 2000 }),
     body("category").optional().isString(), // Can be category ID or name
     body("location").optional().isString(),
     body("latitude").optional().isFloat(),
@@ -741,7 +721,6 @@ router.get("/user/me", authenticate, async (req: AuthRequest, res, next) => {
     const demands = await prisma.demand.findMany({
       where: {
         userId: req.userId,
-        ...(statusFilter ? { status: statusFilter as any } : {}),
       },
       include: {
         user: {

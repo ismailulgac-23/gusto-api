@@ -385,7 +385,7 @@ router.patch(
       if (status === 'ACCEPTED') {
         await prisma.demand.update({
           where: { id: offer.demandId },
-          data: { status: 'COMPLETED' },
+          data: { status: 'CLOSED' },
         });
       }
 

@@ -24,12 +24,6 @@ router.post(
       }
       return true;
     }).withMessage('Geçerli bir fiyat giriniz'),
-    body('estimatedTime').custom((value) => {
-      if (value === undefined || value === null || value === '') {
-        throw new Error('Tahmini süre zorunludur');
-      }
-      return typeof value === 'string';
-    }).withMessage('Tahmini süre zorunludur'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -42,7 +36,7 @@ router.post(
         throw new AppError(`Validation error: ${errorMessages}`, 400);
       }
 
-      const { demandId, message, price, estimatedTime } = req.body;
+      const { demandId, message, price } = req.body;
 
       // Parse price (required)
       const parsedPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -125,7 +119,6 @@ router.post(
             providerId: req.userId!,
             message: message || null,
             price: parsedPrice,
-            estimatedTime: estimatedTime,
             isApproved: true, // Teklifler direkt onaylanıyor
           },
           include: {
@@ -241,7 +234,6 @@ router.patch(
   [
     body('message').optional().isString().isLength({ max: 1000 }),
     body('price').optional().isFloat({ min: 0 }),
-    body('estimatedTime').optional().isString(),
     body('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -262,7 +254,6 @@ router.patch(
       const updateData: any = {};
       if (req.body.message !== undefined) updateData.message = req.body.message;
       if (req.body.price !== undefined) updateData.price = parseFloat(req.body.price);
-      if (req.body.estimatedTime !== undefined) updateData.estimatedTime = req.body.estimatedTime;
       if (req.body.status !== undefined) updateData.status = req.body.status;
 
       const updatedOffer = await prisma.offer.update({

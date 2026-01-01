@@ -459,22 +459,25 @@ router.post(
         throw new AppError("Kategori bulunamadı", 404);
       }
 
-      // Validate and process cityIds
+      // Validate and process cityIds - tek şehir seçimi
       let processedCityIds: string[] = [];
       if (cityIds && Array.isArray(cityIds) && cityIds.length > 0) {
-        // Validate all city IDs exist and are active
-        const cities = await prisma.city.findMany({
+        // Sadece ilk şehri al (tek şehir seçimi)
+        const cityId = cityIds[0];
+        
+        // Validate city ID exists and is active
+        const city = await prisma.city.findUnique({
           where: {
-            id: { in: cityIds },
+            id: cityId,
             isActive: true,
           },
         });
 
-        if (cities.length !== cityIds.length) {
-          throw new AppError("Geçersiz veya aktif olmayan şehir ID'leri", 400);
+        if (!city) {
+          throw new AppError("Geçersiz veya aktif olmayan şehir ID'si", 400);
         }
 
-        processedCityIds = cities.map((city) => city.id);
+        processedCityIds = [city.id];
       } else {
         // If no cities provided, get user's city
         const user = await prisma.user.findUnique({
@@ -495,8 +498,13 @@ router.post(
 
         // If still no cities, throw error
         if (processedCityIds.length === 0) {
-          throw new AppError("En az bir aktif şehir seçmelisiniz", 400);
+          throw new AppError("Bir aktif şehir seçmelisiniz", 400);
         }
+      }
+
+      // Validate countie - tek ilçe string kontrolü
+      if (countie && typeof countie === "string" && countie.trim().length === 0) {
+        throw new AppError("İlçe adı boş olamaz", 400);
       }
 
       // Parse eventDate safely

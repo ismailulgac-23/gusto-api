@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin';
-import { AppError } from '../middleware/errorHandler';
 
 // Firebase Admin SDK'yı başlat
 let firebaseApp: admin.app.App | null = null;

@@ -7,7 +7,7 @@ import { AppError } from '../middleware/errorHandler';
 const router = Router();
 
 // Get all reviews (Admin panel)
-router.get('/', authenticate, async (req: AuthRequest, res, next) => {
+router.get('/', authenticate, async (_req: AuthRequest, res, next) => {
   try {
     const reviews = await prisma.review.findMany({
       include: {
@@ -91,7 +91,7 @@ router.post(
     body('comment').optional().isString().isLength({ max: 500 }),
     body('offerId').optional().isUUID(), // Offer bazlı puanlama için
   ],
-  async (req: AuthRequest, res, next) => {
+  async (req: AuthRequest, res: any, next: any) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {

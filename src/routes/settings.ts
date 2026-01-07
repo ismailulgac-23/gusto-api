@@ -9,7 +9,7 @@ const router = Router();
 // ==================== CITIES ====================
 
 // Get all cities (Public - for registration)
-router.get('/cities', async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/cities', async (_req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const cities = await prisma.city.findMany({
       where: {
@@ -34,7 +34,7 @@ router.get('/cities', async (req: AuthRequest, res: Response, next: NextFunction
 });
 
 // Get all cities (Admin - includes inactive)
-const requireAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const requireAdmin = async (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
     if (!req.userId) {
       throw new AppError('Authentication required', 401);
@@ -60,7 +60,7 @@ router.get(
   '/admin/cities',
   authenticate,
   requireAdmin,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
+  async (_req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const cities = await prisma.city.findMany({
         orderBy: {

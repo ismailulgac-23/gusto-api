@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import bcryptjs from "bcryptjs";
+import * as fs from "fs";
+import * as path from "path";
 dotenv.config();
 
 const prisma = new PrismaClient();
@@ -43,214 +45,54 @@ async function main() {
   });
   console.log(`  ✅ Created city: Manisa (${manisa.id})`);
 
-  // Create Categories with hierarchy
-  console.log("📦 Creating categories...");
-  const categoryMap = new Map<string, string>();
-
-  // Define parent categories based on the image
-  const parentCategories = [
-    { id: "lokma", name: "Lokma", icon: "🍩" },
-    { id: "toplu_yemek", name: "Toplu Yemek", icon: "🍽️" },
-    { id: "catering", name: "Catering", icon: "🥘" },
-    { id: "tavuk_pilav", name: "Tavuk Pilav", icon: "🍗" },
-    { id: "organizasyonlar", name: "Organizasyonlar", icon: "🎉" },
-    { id: "pastaneler", name: "Pastaneler", icon: "🎂" },
-    { id: "pideciler", name: "Pideciler", icon: "🥖" },
-  ];
-
-  // Create parent categories
-  for (const parentCat of parentCategories) {
+  // Create Categories from JSON file
+  console.log("📦 Creating categories from JSON file...");
+  
+  // Read categories from JSON file
+  const categoriesPath = path.join(__dirname, "categories.json");
+  const categoriesData = JSON.parse(fs.readFileSync(categoriesPath, "utf8"));
+  
+  // Create a map to track created categories by their original ID
+  const categoryIdMap = new Map<string, string>();
+  
+  // First pass: Create all categories without parent relationships
+  for (const categoryData of categoriesData) {
     const category = await prisma.category.upsert({
-      where: { name: parentCat.name },
+      where: { name: categoryData.name },
       update: {
-        icon: parentCat.icon,
-        isActive: true,
-        parentId: null,
+        icon: categoryData.icon,
+        isActive: categoryData.isActive,
+        questions: categoryData.questions,
+        commissionRate: categoryData.commissionRate,
+        parentId: null, // Will be set in second pass
       },
       create: {
-        name: parentCat.name,
-        icon: parentCat.icon,
-        isActive: true,
-        parentId: null,
+        name: categoryData.name,
+        icon: categoryData.icon,
+        isActive: categoryData.isActive,
+        questions: categoryData.questions,
+        commissionRate: categoryData.commissionRate,
+        parentId: null, // Will be set in second pass
       },
     });
-    categoryMap.set(parentCat.id, category.id);
-    console.log(
-      `  ✅ Created parent category: ${parentCat.name} (${category.id})`
-    );
+    
+    categoryIdMap.set(categoryData.id, category.id);
+    console.log(`  ✅ Created category: ${categoryData.name} (${category.id})`);
   }
-
-  // Define child categories based on the image
-  const childCategoriesMap: {
-    [key: string]: Array<{ id: string; name: string; icon: string }>;
-  } = {
-    lokma: [
-      { id: "izmir_lokma", name: "İzmir Lokma", icon: "🍩" },
-      { id: "saray_lokma", name: "Saray Lokma", icon: "🍩" },
-    ],
-    toplu_yemek: [
-      { id: "dugun_yemegi", name: "Düğün Yemeği", icon: "🍽️" },
-      { id: "iftar_yemegi", name: "İftar Yemeği", icon: "🍽️" },
-      { id: "mevlit_yemegi", name: "Mevlüt Yemeği", icon: "🍽️" },
-      { id: "sunnnet_yemegi", name: "Sünnet Yemeği", icon: "🍽️" },
-      { id: "tabildot", name: "Tabildot", icon: "🍽️" },
-    ],
-    catering: [
-      {
-        id: "isyeri_personel_yemegi",
-        name: "İşyeri Personel Yemeği",
-        icon: "🥘",
-      },
-      { id: "nisan_ikramliklari", name: "Nişan ikramlıkları", icon: "🥘" },
-      { id: "nisan_menusu", name: "Nişan menüsü", icon: "🥘" },
-      { id: "dugun_catering", name: "Düğün", icon: "🥘" },
-      { id: "davet_catering", name: "Davet", icon: "🥘" },
-      { id: "kokteyl", name: "Kokteyl", icon: "🥘" },
-      { id: "dogum_gunu_catering", name: "Doğum günü", icon: "🥘" },
-      { id: "mevlit_yemegi_catering", name: "Mevlüt yemeği", icon: "🥘" },
-      { id: "iftar_yemegi_catering", name: "İftar yemeği", icon: "🥘" },
-      { id: "aksam_yemegi", name: "Akşam yemeği", icon: "🥘" },
-      { id: "diger_catering", name: "Diğer", icon: "🥘" },
-    ],
-    tavuk_pilav: [
-      { id: "tavuklu_pilav", name: "Tavuklu Pilav", icon: "🍗" },
-      { id: "etli_pilav", name: "Etli Pilav", icon: "🍗" },
-      { id: "nohutlu_pilav", name: "Nohutlu Pilav", icon: "🍗" },
-      { id: "sade_pilav", name: "Sade Pilav", icon: "🍗" },
-      { id: "kavurmali_pilav", name: "Kavurmalı Pilav", icon: "🍗" },
-    ],
-    organizasyonlar: [
-      {
-        id: "evlilik_teklifi_organizasyon",
-        name: "Evlilik Teklifi Organizasyon",
-        icon: "🎉",
-      },
-      { id: "soz_organizasyon", name: "Söz Organizasyon", icon: "🎉" },
-      { id: "nisan_organizasyon", name: "Nişan Organizasyon", icon: "🎉" },
-      { id: "kina_organizasyon", name: "Kına organizasyon", icon: "🎉" },
-      { id: "dugun_organizasyon", name: "Düğün Organizasyon", icon: "🎉" },
-      {
-        id: "dogum_gunu_organizasyonu",
-        name: "Doğum Günü Organizasyonu",
-        icon: "🎉",
-      },
-      { id: "sunnnet_organizasyon", name: "Sünnet Organizasyon", icon: "🎉" },
-      { id: "acilis_organizasyonu", name: "Açılış Organizasyonu", icon: "🎉" },
-      { id: "nikah_organizasyon", name: "Nikah Organizasyon", icon: "🎉" },
-      { id: "eglence_organizasyon", name: "Eğlence Organizasyon", icon: "🎉" },
-      { id: "parti_organizasyon", name: "Parti Organizasyon", icon: "🎉" },
-      {
-        id: "bekarliga_veda_partisi_organizasyon",
-        name: "Bekarlığa Veda Partisi Organizasyon",
-        icon: "🎉",
-      },
-      {
-        id: "cinsiyet_partisi_organizasyon",
-        name: "Cinsiyet Partisi Organizasyon",
-        icon: "🎉",
-      },
-      { id: "yilbasi_organizasyon", name: "Yılbaşı Organizasyon", icon: "🎉" },
-      { id: "yemek_organizasyon", name: "Yemek Organizasyon", icon: "🎉" },
-      {
-        id: "evlilik_yildonumu_organizasyon",
-        name: "Evlilik Yıldönümü Organizasyon",
-        icon: "🎉",
-      },
-      { id: "kamp_organizasyon", name: "Kamp Organizasyon", icon: "🎉" },
-      {
-        id: "mezuniyet_organizasyonu",
-        name: "Mezuniyet Organizasyonu",
-        icon: "🎉",
-      },
-      { id: "davet_organizasyon", name: "Davet Organizasyon", icon: "🎉" },
-      { id: "muzik_organizasyonu", name: "Müzik Organizasyonu", icon: "🎉" },
-      { id: "konser_organizasyon", name: "Konser Organizasyon", icon: "🎉" },
-      { id: "piknik_organizasyon", name: "Piknik Organizasyon", icon: "🎉" },
-      { id: "fuar_organizasyon", name: "Fuar Organizasyon", icon: "🎉" },
-      { id: "tur_organizasyon", name: "Tur Organizasyon", icon: "🎉" },
-      { id: "susleme_organizasyon", name: "Süsleme Organizasyon", icon: "🎉" },
-      {
-        id: "etkinlik_organizasyonu",
-        name: "Etkinlik Organizasyonu",
-        icon: "🎉",
-      },
-      { id: "kongre_organizasyon", name: "Kongre Organizasyon", icon: "🎉" },
-      {
-        id: "dis_bugdayi_organizasyon",
-        name: "Diş Buğdayı Organizasyon",
-        icon: "🎉",
-      },
-      { id: "lansman_organizasyon", name: "Lansman Organizasyon", icon: "🎉" },
-      { id: "tanitim_organizasyon", name: "Tanıtım Organizasyon", icon: "🎉" },
-      {
-        id: "toplanti_organizasyon",
-        name: "Toplantı Organizasyon",
-        icon: "🎉",
-      },
-      {
-        id: "kurumsal_etkinlik_organizasyon",
-        name: "Kurumsal Etkinlik Organizasyon",
-        icon: "🎉",
-      },
-      {
-        id: "baby_shower_organizasyon",
-        name: "Baby Shower Organizasyon",
-        icon: "🎉",
-      },
-      {
-        id: "havai_fisek_organizasyon",
-        name: "Havai Fişek Organizasyon",
-        icon: "🎉",
-      },
-      { id: "diger_organizasyon", name: "Diğer", icon: "🎉" },
-    ],
-    pastaneler: [
-      { id: "dogum_gunu_pastasi", name: "Doğum Günü Pastası", icon: "🎂" },
-      { id: "butik_pasta", name: "Butik Pasta", icon: "🎂" },
-      { id: "yazili_pasta", name: "Yazılı Pasta", icon: "🎂" },
-      { id: "yas_pasta", name: "Yaş Pasta", icon: "🎂" },
-      { id: "soz_pastasi", name: "Söz Pastası", icon: "🎂" },
-      { id: "nisan_pastasi", name: "Nişan Pastası", icon: "🎂" },
-      { id: "dugun_pastasi", name: "Düğün Pastası", icon: "🎂" },
-      { id: "resimli_pasta", name: "Resimli Pasta", icon: "🎂" },
-      { id: "seher_hamuru_pasta", name: "Şeher Hamuru Pasta", icon: "🎂" },
-      { id: "kuru_pasta", name: "Kuru Pasta", icon: "🎂" },
-      { id: "glutensiz_pasta", name: "Gulutensiz Pasta", icon: "🎂" },
-      { id: "maket_pasta", name: "Maket Pasta", icon: "🎂" },
-      { id: "diger_pasta", name: "Diğer", icon: "🎂" },
-    ],
-    pideciler: [
-      { id: "pide", name: "Pide", icon: "🥖" },
-      { id: "lahmacun", name: "Lahmacun", icon: "🥖" },
-    ],
-  };
-
-  // Create child categories
-  for (const [parentId, childCats] of Object.entries(childCategoriesMap)) {
-    const parentCategoryId = categoryMap.get(parentId);
-    if (!parentCategoryId) continue;
-
-    for (const childCat of childCats) {
-      const category = await prisma.category.upsert({
-        where: { name: childCat.name },
-        update: {
-          icon: childCat.icon,
-          isActive: true,
-          parentId: parentCategoryId,
-        },
-        create: {
-          name: childCat.name,
-          icon: childCat.icon,
-          isActive: true,
-          parentId: parentCategoryId,
-        },
-      });
-      categoryMap.set(childCat.id, category.id);
-      console.log(
-        `  ✅ Created child category: ${childCat.name} (${category.id}) under ${
-          parentCategories.find((p) => p.id === parentId)?.name
-        }`
-      );
+  
+  // Second pass: Update parent relationships
+  for (const categoryData of categoriesData) {
+    if (categoryData.parentId) {
+      const newCategoryId = categoryIdMap.get(categoryData.id);
+      const newParentId = categoryIdMap.get(categoryData.parentId);
+      
+      if (newCategoryId && newParentId) {
+        await prisma.category.update({
+          where: { id: newCategoryId },
+          data: { parentId: newParentId },
+        });
+        console.log(`  ✅ Updated parent relationship: ${categoryData.name} -> parent`);
+      }
     }
   }
 

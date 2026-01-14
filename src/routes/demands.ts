@@ -29,7 +29,8 @@ router.get(
         throw new AppError(errors.array()[0].msg, 400);
       }
 
-      const { category, status, page = "1", limit = "10", cityId } = req.query;
+      const { category, status = "ACTIVE", page = "1", limit = "10", cityId } = req.query;
+      
 
       // Get current user to check type and categories
       const currentUser = await prisma.user.findUnique({

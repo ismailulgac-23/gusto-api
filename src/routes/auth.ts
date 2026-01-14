@@ -133,10 +133,19 @@ router.post(
                 categoryId,
               })),
             },
-            balance: 150.00
+            balance: 200.00
           } as any,
           include: {
             categories: {
+
+              /* 
+              TODO NOT
+              200
+              500
+              800
+              1000
+              DİĞER KENDİ İSTEĞİ
+              */
               include: {
                 category: {
                   select: {

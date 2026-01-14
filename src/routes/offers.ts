@@ -550,6 +550,7 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
         ? status
         : undefined;
 
+
     // Get current user to check type
     const currentUser = await prisma.user.findUnique({
       where: { id: req.userId },

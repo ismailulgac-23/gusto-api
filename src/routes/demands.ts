@@ -125,21 +125,7 @@ router.get(
         where.isApproved = true;
       }
 
-      // Filter by city if provided
-      if (cityId) {
-        where.cities = {
-          some: {
-            cityId: cityId as string,
-          },
-        };
-      } else if (currentUser?.userType === "PROVIDER" && currentUser.cityId) {
-        // For providers, default to their city if no city filter provided
-        where.cities = {
-          some: {
-            cityId: currentUser.cityId,
-          },
-        };
-      }
+      
 
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
@@ -719,6 +705,9 @@ router.delete(
 router.get("/user/me", authenticate, async (req: AuthRequest, res, next) => {
   try {
     const { status } = req.query;
+
+  
+    
 
     const allowedStatuses = ["ACTIVE", "CLOSED", "COMPLETED", "CANCELLED"];
     const statusFilter =

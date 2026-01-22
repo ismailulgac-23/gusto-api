@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx scripts/create-admin.ts",
+    "create-categories": "tsx scripts/create-categories.ts"
   },
   "keywords": [
     "ihale",
@@ -31,8 +32,10 @@
     "express": "^4.19.2",
     "express-validator": "^7.2.0",
     "firebase-admin": "^12.0.0",
+    "fs": "^0.0.1-security",
     "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "process": "^0.11.10"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

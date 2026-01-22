@@ -1,0 +1,1557 @@
+[
+  {
+    "id": "31a07cdc-cebc-45ea-bd90-fdba5328cfe2",
+    "name": "Lokma",
+    "icon": "🍩",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.645",
+    "updatedAt": "2025-12-17 13:09:41.645"
+  },
+  {
+    "id": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "name": "Toplu Yemek",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.659",
+    "updatedAt": "2025-12-17 13:09:41.659"
+  },
+  {
+    "id": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "name": "Catering",
+    "icon": "🥘",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.669",
+    "updatedAt": "2025-12-17 13:09:41.669"
+  },
+  {
+    "id": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "name": "Tavuk Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.677",
+    "updatedAt": "2025-12-17 13:09:41.677"
+  },
+  {
+    "id": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "name": "Organizasyonlar",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.687",
+    "updatedAt": "2025-12-17 13:09:41.687"
+  },
+  {
+    "id": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "name": "Pastaneler",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.696",
+    "updatedAt": "2025-12-17 13:09:41.696"
+  },
+  {
+    "id": "0d31e23b-5f1c-42a6-b401-12ff66e9878f",
+    "name": "Pideciler",
+    "icon": "🥖",
+    "questions": null,
+    "parentId": null,
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.703",
+    "updatedAt": "2025-12-17 13:09:41.703"
+  },
+  {
+    "id": "c287f61c-c1ef-43d6-a2b6-5979dca2b507",
+    "name": "Saray Lokma",
+    "icon": "🍩",
+    "questions": null,
+    "parentId": "31a07cdc-cebc-45ea-bd90-fdba5328cfe2",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.72",
+    "updatedAt": "2025-12-17 13:09:41.72"
+  },
+  {
+    "id": "061a03ca-5288-42c4-af90-65e9f68d2b53",
+    "name": "Düğün Yemeği",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.727",
+    "updatedAt": "2025-12-17 13:09:41.727"
+  },
+  {
+    "id": "a3dffe9f-8393-4cb2-b310-5d58cca1997b",
+    "name": "İftar Yemeği",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.734",
+    "updatedAt": "2025-12-17 13:09:41.734"
+  },
+  {
+    "id": "e1eb4011-bd90-4332-bb03-b5aa09798a77",
+    "name": "Mevlüt Yemeği",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.739",
+    "updatedAt": "2025-12-17 13:09:41.739"
+  },
+  {
+    "id": "997e4fad-39e7-4c31-a867-e0f9a72a5a5b",
+    "name": "Sünnet Yemeği",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.745",
+    "updatedAt": "2025-12-17 13:09:41.745"
+  },
+  {
+    "id": "b29f38d7-1b9b-42ea-a171-4d16474e7971",
+    "name": "Tabildot",
+    "icon": "🍽️",
+    "questions": null,
+    "parentId": "e250f6a2-900b-4157-9ead-7a9e1b0e1d47",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.752",
+    "updatedAt": "2025-12-17 13:09:41.752"
+  },
+  {
+    "id": "6a81beb1-63ca-460e-ae2f-5eb990af54cf",
+    "name": "İşyeri Personel Yemeği",
+    "icon": "🥘",
+    "questions": null,
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.761",
+    "updatedAt": "2025-12-17 13:09:41.761"
+  },
+  {
+    "id": "a4569c5d-914a-488e-9804-b1a54cc18d8b",
+    "name": "Nişan ikramlıkları",
+    "icon": "🥘",
+    "questions": null,
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.768",
+    "updatedAt": "2025-12-17 13:09:41.768"
+  },
+  {
+    "id": "0816aadf-181b-4baa-9a8e-560195061617",
+    "name": "Nişan menüsü",
+    "icon": "🥘",
+    "questions": null,
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.775",
+    "updatedAt": "2025-12-17 13:09:41.775"
+  },
+  {
+    "id": "b2b60c76-2558-4416-97d7-a63194f5f566",
+    "name": "Düğün",
+    "icon": "🥘",
+    "questions": null,
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.781",
+    "updatedAt": "2025-12-17 13:09:41.781"
+  },
+  {
+    "id": "f718fa8f-e42d-46eb-87dc-d942c3afdb8e",
+    "name": "Tavuklu Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.831",
+    "updatedAt": "2025-12-17 13:09:41.831"
+  },
+  {
+    "id": "33bb75f0-7ce9-427d-bf15-97a3d6f419ab",
+    "name": "Etli Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.835",
+    "updatedAt": "2025-12-17 13:09:41.835"
+  },
+  {
+    "id": "e2cef3a6-f629-4549-815f-790e4fc04851",
+    "name": "Nohutlu Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.84",
+    "updatedAt": "2025-12-17 13:09:41.84"
+  },
+  {
+    "id": "3f519973-b0da-4e32-b31f-74d40d56f5fb",
+    "name": "Sade Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.845",
+    "updatedAt": "2025-12-17 13:09:41.845"
+  },
+  {
+    "id": "d0081c22-872f-42c7-8a57-eb1ae1438c1b",
+    "name": "Kavurmalı Pilav",
+    "icon": "🍗",
+    "questions": null,
+    "parentId": "e35e3ec1-aec5-40c6-8fd4-61ae5c7c041a",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.85",
+    "updatedAt": "2025-12-17 13:09:41.85"
+  },
+  {
+    "id": "06bc6ab1-9370-4a18-9427-c0b7ca43a31e",
+    "name": "Evlilik Teklifi Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.857",
+    "updatedAt": "2025-12-17 13:09:41.857"
+  },
+  {
+    "id": "61129f23-b62f-4308-acc9-cc73ad0d3793",
+    "name": "Söz Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.864",
+    "updatedAt": "2025-12-17 13:09:41.864"
+  },
+  {
+    "id": "47d64190-4eb7-4fe3-9b3f-00f0bfb73d97",
+    "name": "Nişan Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.871",
+    "updatedAt": "2025-12-17 13:09:41.871"
+  },
+  {
+    "id": "29d686b2-a5e2-4eb8-ab5a-c641ac1e95c0",
+    "name": "Kına organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.877",
+    "updatedAt": "2025-12-17 13:09:41.877"
+  },
+  {
+    "id": "fc855b38-3572-47ee-a6ff-dd7a43ba1925",
+    "name": "Düğün Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.884",
+    "updatedAt": "2025-12-17 13:09:41.884"
+  },
+  {
+    "id": "815085b3-90d4-4b87-9e61-5011572b2572",
+    "name": "Doğum Günü Organizasyonu",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.89",
+    "updatedAt": "2025-12-17 13:09:41.89"
+  },
+  {
+    "id": "9d80fbb7-a040-4d37-a092-9c9a8292eb37",
+    "name": "Sünnet Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.897",
+    "updatedAt": "2025-12-17 13:09:41.897"
+  },
+  {
+    "id": "b5dcef10-2d8e-4383-b67d-2b8fa0abe532",
+    "name": "Açılış Organizasyonu",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.905",
+    "updatedAt": "2025-12-17 13:09:41.905"
+  },
+  {
+    "id": "21070dd4-3764-45e0-a74b-a0db23062945",
+    "name": "Nikah Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.91",
+    "updatedAt": "2025-12-17 13:09:41.91"
+  },
+  {
+    "id": "c23e9258-7ad4-496f-b49b-86f016a4c6fb",
+    "name": "Eğlence Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.914",
+    "updatedAt": "2025-12-17 13:09:41.914"
+  },
+  {
+    "id": "5cb53c34-4838-482e-a594-3f61cc5a3db2",
+    "name": "Parti Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.921",
+    "updatedAt": "2025-12-17 13:09:41.921"
+  },
+  {
+    "id": "677a8915-98bb-40e5-bd3a-1e02dc9b4460",
+    "name": "Bekarlığa Veda Partisi Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.927",
+    "updatedAt": "2025-12-17 13:09:41.927"
+  },
+  {
+    "id": "d7c49424-d687-4b14-a76c-0934f482dba3",
+    "name": "Cinsiyet Partisi Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.933",
+    "updatedAt": "2025-12-17 13:09:41.933"
+  },
+  {
+    "id": "9f99efd3-e5c6-40ed-8f4f-f47ce9c9ef61",
+    "name": "Yılbaşı Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.938",
+    "updatedAt": "2025-12-17 13:09:41.938"
+  },
+  {
+    "id": "6bc20bcb-df5d-4c77-b88d-aa1692efe7f8",
+    "name": "Yemek Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.942",
+    "updatedAt": "2025-12-17 13:09:41.942"
+  },
+  {
+    "id": "0ca2ccd2-a23d-4751-8625-f0125a1a6e17",
+    "name": "Evlilik Yıldönümü Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.948",
+    "updatedAt": "2025-12-17 13:09:41.948"
+  },
+  {
+    "id": "b3d9d23d-71af-4aa0-a1e9-421f99d26b0b",
+    "name": "Kamp Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.954",
+    "updatedAt": "2025-12-17 13:09:41.954"
+  },
+  {
+    "id": "2ef15659-0e40-4b4b-b016-0849f1772717",
+    "name": "Mezuniyet Organizasyonu",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.96",
+    "updatedAt": "2025-12-17 13:09:41.96"
+  },
+  {
+    "id": "d0f8983e-522f-4660-84b4-8a43465d34d5",
+    "name": "Davet Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.966",
+    "updatedAt": "2025-12-17 13:09:41.966"
+  },
+  {
+    "id": "a4179b84-22a8-448f-8740-de6ad4d3440c",
+    "name": "Müzik Organizasyonu",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.975",
+    "updatedAt": "2025-12-17 13:09:41.975"
+  },
+  {
+    "id": "4008bac3-4c33-4a32-801e-d276ac630584",
+    "name": "Konser Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.986",
+    "updatedAt": "2025-12-17 13:09:41.986"
+  },
+  {
+    "id": "322d867b-80b8-4e3e-84f5-d331628f7deb",
+    "name": "Piknik Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.995",
+    "updatedAt": "2025-12-17 13:09:41.995"
+  },
+  {
+    "id": "9c56f398-bd25-47ad-af13-5403fc55ce3d",
+    "name": "Fuar Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.004",
+    "updatedAt": "2025-12-17 13:09:42.004"
+  },
+  {
+    "id": "c48efa2f-8fbc-4d0e-9fd5-015da33e0b25",
+    "name": "Tur Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.012",
+    "updatedAt": "2025-12-17 13:09:42.012"
+  },
+  {
+    "id": "25abdcb6-5477-489b-8b9b-7c9d8574798f",
+    "name": "Diğer",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.826",
+    "updatedAt": "2025-12-17 13:09:42.22"
+  },
+  {
+    "id": "118da628-d441-4471-b744-8cfc89916887",
+    "name": "Süsleme Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.019",
+    "updatedAt": "2025-12-17 13:09:42.019"
+  },
+  {
+    "id": "99452158-81fb-4f42-b4fd-417ab78f3230",
+    "name": "Etkinlik Organizasyonu",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.027",
+    "updatedAt": "2025-12-17 13:09:42.027"
+  },
+  {
+    "id": "46c2b18c-c295-4732-8a96-90acaffa4426",
+    "name": "Kongre Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.035",
+    "updatedAt": "2025-12-17 13:09:42.035"
+  },
+  {
+    "id": "f58c4015-89d5-454f-a72f-5c096c7d63b6",
+    "name": "Diş Buğdayı Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.048",
+    "updatedAt": "2025-12-17 13:09:42.048"
+  },
+  {
+    "id": "d366dadf-bb64-4df4-b246-cff5767ced2f",
+    "name": "Lansman Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.059",
+    "updatedAt": "2025-12-17 13:09:42.059"
+  },
+  {
+    "id": "ee49d469-132a-472d-b4ba-3f0c980a0106",
+    "name": "Tanıtım Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.071",
+    "updatedAt": "2025-12-17 13:09:42.071"
+  },
+  {
+    "id": "9d46fd43-06ad-489f-9653-68878b4300c8",
+    "name": "Toplantı Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.079",
+    "updatedAt": "2025-12-17 13:09:42.079"
+  },
+  {
+    "id": "026b7a44-f77c-468e-86b3-bca1c9b65ad6",
+    "name": "Kurumsal Etkinlik Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.088",
+    "updatedAt": "2025-12-17 13:09:42.088"
+  },
+  {
+    "id": "a5662157-24d7-4aa1-b347-94884183f45f",
+    "name": "Baby Shower Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.098",
+    "updatedAt": "2025-12-17 13:09:42.098"
+  },
+  {
+    "id": "ded07202-4d56-4b6d-900e-dd12189dc6b3",
+    "name": "Havai Fişek Organizasyon",
+    "icon": "🎉",
+    "questions": null,
+    "parentId": "76ad2461-6261-4556-a4f6-614723ff9cbe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.109",
+    "updatedAt": "2025-12-17 13:09:42.109"
+  },
+  {
+    "id": "711ab597-b522-44d5-93e8-2441cebf4539",
+    "name": "Doğum Günü Pastası",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.123",
+    "updatedAt": "2025-12-17 13:09:42.123"
+  },
+  {
+    "id": "bad09621-f451-4456-b1fb-ae777d1fad00",
+    "name": "Butik Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.134",
+    "updatedAt": "2025-12-17 13:09:42.134"
+  },
+  {
+    "id": "60116ea6-439b-4fea-a4c9-7b42310c1e24",
+    "name": "Yazılı Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.145",
+    "updatedAt": "2025-12-17 13:09:42.145"
+  },
+  {
+    "id": "3f4db9f7-3419-4177-bef3-ad31bcace9f3",
+    "name": "Yaş Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.151",
+    "updatedAt": "2025-12-17 13:09:42.151"
+  },
+  {
+    "id": "7fee42e5-c1f3-4288-9417-1af93cca5bb3",
+    "name": "Söz Pastası",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.161",
+    "updatedAt": "2025-12-17 13:09:42.161"
+  },
+  {
+    "id": "630ad069-692c-4846-9cfe-ebc39d5cd727",
+    "name": "Nişan Pastası",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.17",
+    "updatedAt": "2025-12-17 13:09:42.17"
+  },
+  {
+    "id": "7013d750-0cea-4718-88a5-79365129ed30",
+    "name": "Düğün Pastası",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.18",
+    "updatedAt": "2025-12-17 13:09:42.18"
+  },
+  {
+    "id": "37eb050e-d299-4b75-aadf-e66ae3d90cb8",
+    "name": "Resimli Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.189",
+    "updatedAt": "2025-12-17 13:09:42.189"
+  },
+  {
+    "id": "08cb4bdc-b139-451b-a5df-0ab763df7f85",
+    "name": "Şeher Hamuru Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.195",
+    "updatedAt": "2025-12-17 13:09:42.195"
+  },
+  {
+    "id": "f0b815a6-0eb5-4340-9651-e5c7c81a9d2f",
+    "name": "Kuru Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.202",
+    "updatedAt": "2025-12-17 13:09:42.202"
+  },
+  {
+    "id": "34490858-bc6a-481b-ad7f-1ac37461f793",
+    "name": "Maket Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.212",
+    "updatedAt": "2025-12-17 13:09:42.212"
+  },
+  {
+    "id": "af8247ea-1734-424b-9822-bcf16ac59be5",
+    "name": "Pide",
+    "icon": "🥖",
+    "questions": null,
+    "parentId": "0d31e23b-5f1c-42a6-b401-12ff66e9878f",
+    "commissionRate": null,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.227",
+    "updatedAt": "2025-12-17 13:09:42.227"
+  },
+  {
+    "id": "95549422-c423-43a7-8d97-a26a8f21e860",
+    "name": "İzmir Lokma",
+    "icon": "🍩",
+    "questions": null,
+    "parentId": "31a07cdc-cebc-45ea-bd90-fdba5328cfe2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.71",
+    "updatedAt": "2025-12-18 13:20:01.346"
+  },
+  {
+    "id": "cd25df8b-2339-4a62-85b5-16b64e966350",
+    "name": "Lahmacun",
+    "icon": "🥖",
+    "questions": null,
+    "parentId": "0d31e23b-5f1c-42a6-b401-12ff66e9878f",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.241",
+    "updatedAt": "2025-12-18 13:20:20.457"
+  },
+  {
+    "id": "d4aa39a1-fb21-47c3-931e-854ac97a147b",
+    "name": "Gulutensiz Pasta",
+    "icon": "🎂",
+    "questions": null,
+    "parentId": "b7e5cef5-fc50-4b5b-855f-b96fad457afe",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:42.207",
+    "updatedAt": "2025-12-18 13:20:36.556"
+  },
+  {
+    "id": "0b3eb6e8-6dc5-45a7-b412-87a35ab42426",
+    "name": "Doğum günü",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766080386291_904dcdoc1",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "15",
+            "value": "15"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100 veya daha falza",
+            "value": "100 veya daha falza"
+          }
+        ],
+        "question": "Doğum günü organizasyonu kaç kişilik olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766080520296_vga8wo7h7",
+        "type": "multiselect",
+        "options": [
+          {
+            "label": "İkram",
+            "value": "İkram"
+          },
+          {
+            "label": "Pasta",
+            "value": "Pasta"
+          },
+          {
+            "label": "Kahvaltı",
+            "value": "Kahvaltı"
+          },
+          {
+            "label": "Öğle Yemeği",
+            "value": "Öğle Yemeği"
+          },
+          {
+            "label": "Akşam Yemeği",
+            "value": "Akşam Yemeği"
+          },
+          {
+            "label": "Diğer",
+            "value": "Diğer"
+          }
+        ],
+        "question": "Hangi öğün yada öğülerde olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766080646696_0witxld0o",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1"
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8 yada daha falza",
+            "value": "8 yada daha falza"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766080705728_2mw6axhwe",
+        "type": "text",
+        "question": "Eklemek istediğiniz detaylar varmı yazın",
+        "required": false,
+        "placeholder": "Örnek: Pasta çikolatalı olacak. Kutlama evede yapılacak gibi"
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.802",
+    "updatedAt": "2025-12-18 17:59:43.658"
+  },
+  {
+    "id": "07a148b8-5d97-499f-8f2d-4c793b5cff06",
+    "name": "Kokteyl",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766065316106_ryp710aq8",
+        "type": "select",
+        "options": [
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100",
+            "value": "100"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "200",
+            "value": "200"
+          },
+          {
+            "label": "300",
+            "value": "300"
+          },
+          {
+            "label": "400",
+            "value": "400"
+          },
+          {
+            "label": "500 veya daha fazla",
+            "value": "500 veya daha fazla"
+          }
+        ],
+        "question": "Kaç kişilik kokteyl organizasyonu olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766065523377_iotojefnp",
+        "type": "multiselect",
+        "options": [
+          {
+            "label": "İkram",
+            "value": "İkram"
+          },
+          {
+            "label": "Kahvaltı",
+            "value": "Kahvaltı"
+          },
+          {
+            "label": "Öğle Yemeği",
+            "value": "Öğle Yemeği"
+          },
+          {
+            "label": "Akşam Yemeği",
+            "value": "Akşam Yemeği"
+          },
+          {
+            "label": "Diğer",
+            "value": "Diğer"
+          }
+        ],
+        "question": "Hangi öğün yada öğülerde olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766065637521_7oli7ule6",
+        "type": "select",
+        "options": [
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "6 Yada daha fazla",
+            "value": "6 Yada daha fazla"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766065727411_zuvcvmavl",
+        "type": "text",
+        "question": "Eklemek istediğiniz detaylar varmı yazın",
+        "required": false,
+        "placeholder": "Örnek: İşye açılışı için akşam kokteyle istiyoruz. Açık büfe olacak."
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.796",
+    "updatedAt": "2025-12-18 18:48:20.742"
+  },
+  {
+    "id": "8cc5feed-ac24-4b7e-876a-5529fd6d0b3d",
+    "name": "Davet",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766064106290_hxnb6nepe",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "15",
+            "value": "15"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "25",
+            "value": "25"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100",
+            "value": "100"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "200",
+            "value": "200"
+          },
+          {
+            "label": "250",
+            "value": "250"
+          },
+          {
+            "label": "300 veya daha fazla",
+            "value": "300 veya daha fazla"
+          }
+        ],
+        "question": "Kaç kişilik davet organizasyonu olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766064290399_jlwynggi2",
+        "type": "multiselect",
+        "options": [
+          {
+            "label": "Brunch",
+            "value": "Brunch"
+          },
+          {
+            "label": "Öğle Yemeği",
+            "value": "Öğle Yemeği"
+          },
+          {
+            "label": "Akşam Yemeği",
+            "value": "Akşam Yemeği"
+          },
+          {
+            "label": "Kahvaltı",
+            "value": "Kahvaltı"
+          },
+          {
+            "label": "İkramlık",
+            "value": "İkramlık"
+          },
+          {
+            "label": "Diğer",
+            "value": "Diğer"
+          }
+        ],
+        "question": "Hangi öğün yada öğünlerde olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766064616854_ysaejdwao",
+        "type": "select",
+        "options": [
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "6 Yada daha fazla",
+            "value": "6 Yada daha fazla"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766064707732_eh5rdheej",
+        "type": "text",
+        "question": "Eklemek istediğiniz detaylar varmı yazın",
+        "required": false,
+        "placeholder": "Örnek: İş yeri yıl dönümü yemeği açık büfe kahvaltı 7 çeşit olsun bolca çay ve kahve ikramı olamalı özellikle paçanga böreği istiyorum."
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.786",
+    "updatedAt": "2025-12-18 19:18:03.413"
+  },
+  {
+    "id": "1a15ce23-06df-4c8a-8601-365d5400b288",
+    "name": "Mevlüt yemeği",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766082323738_2a5dxa6ao",
+        "type": "select",
+        "options": [
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100",
+            "value": "100"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "200",
+            "value": "200"
+          },
+          {
+            "label": "250",
+            "value": "250"
+          },
+          {
+            "label": "300 yada daha fazla",
+            "value": "300 yada daha fazla"
+          }
+        ],
+        "question": "Kaç kişilik mevlit organizasyonu olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766082389891_m167sx3j6",
+        "type": "multiselect",
+        "options": [
+          {
+            "label": "Öğle Yemeği",
+            "value": "Öğle Yemeği"
+          },
+          {
+            "label": "Akşam Yemeği",
+            "value": "Akşam Yemeği"
+          },
+          {
+            "label": "İkram",
+            "value": "İkram"
+          },
+          {
+            "label": "Diğer",
+            "value": "Diğer"
+          }
+        ],
+        "question": "Hangi öğün yada öğülerde olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766082459048_4l7qfm5oa",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1"
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766082528282_3kbip4s6d",
+        "type": "text",
+        "question": "Eklemek istediğiniz detaylar varmı yazın",
+        "required": false,
+        "placeholder": "Örnek: Tavuklu pilav ve helva istiyorum, 6 çeşit ikramlık olsun gibi."
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.809",
+    "updatedAt": "2025-12-18 18:33:52.013"
+  },
+  {
+    "id": "e5f343de-7d0c-4d44-aca9-394135592a33",
+    "name": "İftar yemeği",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766084599978_4w0x3g3gp",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100",
+            "value": "100"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "200",
+            "value": "200"
+          },
+          {
+            "label": "300",
+            "value": "300"
+          },
+          {
+            "label": "400",
+            "value": "400"
+          },
+          {
+            "label": "500 yada daha fazla",
+            "value": "500 yada daha fazla"
+          }
+        ],
+        "question": "Kaç kişilik iftar yemeği olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766084737067_vwmkbkri0",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1"
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "6 yada daha fazla",
+            "value": "6 yada daha fazla"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766084791696_sm52zu6q5",
+        "type": "text",
+        "question": "Eklemek istediğiniz detaylar varmı yazın",
+        "required": false,
+        "placeholder": "Örnek: 150 kişi için masa sandalyeye ihtiyacımız var... (gibi)"
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.814",
+    "updatedAt": "2025-12-18 19:07:43.406"
+  },
+  {
+    "id": "1fc040bd-fa19-41b9-b589-25ffc0ef03d1",
+    "name": "Akşam yemeği",
+    "icon": "🥘",
+    "questions": [
+      {
+        "id": "q_1766085138529_4b3w9w5oy",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "20",
+            "value": "20"
+          },
+          {
+            "label": "30",
+            "value": "30"
+          },
+          {
+            "label": "40",
+            "value": "40"
+          },
+          {
+            "label": "50",
+            "value": "50"
+          },
+          {
+            "label": "60",
+            "value": "60"
+          },
+          {
+            "label": "80",
+            "value": "80"
+          },
+          {
+            "label": "100",
+            "value": "100"
+          },
+          {
+            "label": "150",
+            "value": "150"
+          },
+          {
+            "label": "200",
+            "value": "200"
+          },
+          {
+            "label": "300 yada daha fazla",
+            "value": "300 yada daha fazla"
+          }
+        ],
+        "question": "Kaç kişilik akşam yemeği olacak?",
+        "required": true
+      },
+      {
+        "id": "q_1766085231678_wychxp9xf",
+        "type": "select",
+        "options": [
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5"
+          },
+          {
+            "label": "6 yada daha fazla",
+            "value": "6 yada daha fazla"
+          }
+        ],
+        "question": "Menü kaç çeşit olacak?",
+        "required": true
+      }
+    ],
+    "parentId": "17b05a98-95a0-4c59-b7bb-6dc92e3f5fc2",
+    "commissionRate": 5,
+    "isActive": true,
+    "createdAt": "2025-12-17 13:09:41.821",
+    "updatedAt": "2025-12-18 19:14:35.772"
+  }
+]

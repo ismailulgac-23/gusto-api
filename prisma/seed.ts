@@ -57,22 +57,30 @@ async function main() {
   
   // First pass: Create all categories without parent relationships
   for (const categoryData of categoriesData) {
+    var payload = {}
+    if(categoryData.questions!='null'){
+      payload = {
+        questions: categoryData.questions
+      }
+    }
     const category = await prisma.category.upsert({
       where: { name: categoryData.name },
       update: {
         icon: categoryData.icon,
         isActive: categoryData.isActive,
-        questions: categoryData.questions,
         commissionRate: categoryData.commissionRate,
         parentId: null, // Will be set in second pass
+        ...payload,
+        rank: categoryData?.rank
       },
       create: {
         name: categoryData.name,
         icon: categoryData.icon,
         isActive: categoryData.isActive,
-        questions: categoryData.questions,
         commissionRate: categoryData.commissionRate,
         parentId: null, // Will be set in second pass
+        ...payload,
+        rank: categoryData?.rank
       },
     });
     

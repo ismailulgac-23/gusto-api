@@ -37,6 +37,8 @@ model Category {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  rank Int?
+
   // Relations
   parent            Category?         @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children          Category[]        @relation("CategoryHierarchy")
@@ -186,7 +188,7 @@ model Notification {
 
 model Review {
   id             String   @id @default(uuid())
-  offerId        String?  // Hangi offer için puanlama yapıldı
+  offerId        String? // Hangi offer için puanlama yapıldı
   reviewerId     String
   reviewedUserId String
   rating         Int
@@ -194,14 +196,14 @@ model Review {
   createdAt      DateTime @default(now())
 
   // Relations
-  offer       Offer? @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  reviewer    User?  @relation("ReviewsByUser", fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewedUser User? @relation("ReviewsForUser", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+  offer        Offer? @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  reviewer     User?  @relation("ReviewsByUser", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser User?  @relation("ReviewsForUser", fields: [reviewedUserId], references: [id], onDelete: Cascade)
 
+  @@unique([offerId, reviewerId]) // Aynı offer için aynı kişi birden fazla puanlama yapamaz
   @@index([reviewerId])
   @@index([reviewedUserId])
   @@index([offerId])
-  @@unique([offerId, reviewerId]) // Aynı offer için aynı kişi birden fazla puanlama yapamaz
   @@map("reviews")
 }
 

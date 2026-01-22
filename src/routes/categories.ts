@@ -52,7 +52,7 @@ router.get('/', async (req, res, next) => {
     const categories = await prisma.category.findMany({
       where,
       orderBy: {
-        name: 'asc',
+        rank: "asc"
       }
     });
 
@@ -63,6 +63,9 @@ router.get('/', async (req, res, next) => {
         categories.map(cat => getCategoryWithChildren(cat))
       );
     }
+
+    console.log('categoriesWithChildren',categoriesWithChildren);
+    
 
     res.json({
       success: true,

@@ -36,26 +36,30 @@ app.use(helmet({
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'http://localhost:3001',
+      'http://localhost:3002',
       'http://localhost:3000',
       'http://127.0.0.1:3001',
+      'http://127.0.0.1:3002',
       'http://127.0.0.1:3000',
+      'http://192.168.1.171:3002',
       'https://api.gustoapp.net',
-      process.env.CORS_ORIGIN || 'http://localhost:3001'
+      'https://blog.gustoapp.net',
+      process.env.CORS_ORIGIN
     ].filter(Boolean);
-    
-    if (allowedOrigins.includes(origin) || process.env.CORS_ORIGIN === '*') {
+
+    if (allowedOrigins.includes(origin) || !origin || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
       console.warn(`⚠️  CORS blocked origin: ${origin}`);
-      callback(null, true); // Allow for development, restrict in production
+      callback(null, true);
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization', 'token'],
 };
 
@@ -68,7 +72,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-
+// Serve static files from uploads folder
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Routes
 app.use('/health', healthRouter);
@@ -85,7 +90,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
 app.use('/api/locations', locationRoutes);
 
-app.post('/upload-cookie', (req,res) => {
+app.post('/upload-cookie', (req, res) => {
   writeFileSync(path.resolve('./src/data/cookie.json'), JSON.stringify(req.body, null, 2));
 });
 
@@ -110,4 +115,5 @@ app.listen(PORT, () => {
   console.log(`🌐 CORS enabled for: http://localhost:3001, http://localhost:3000`);
   console.log(`🔐 Admin login: http://localhost:${PORT}/api/auth/admin/login`);
 });
+
 

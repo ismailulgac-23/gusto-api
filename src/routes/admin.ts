@@ -4,6 +4,38 @@ import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { validateRequest } from '../middleware/validator';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error('Only images are allowed'));
+  },
+});
 
 const router = Router();
 
@@ -631,19 +663,19 @@ router.patch(
       if (req.body.userId !== undefined) updateData.userId = req.body.userId;
       if (req.body.location !== undefined) updateData.location = req.body.location;
       if (req.body.latitude !== undefined) {
-        updateData.latitude = req.body.latitude !== null && req.body.latitude !== '' 
-          ? parseFloat(req.body.latitude.toString()) 
+        updateData.latitude = req.body.latitude !== null && req.body.latitude !== ''
+          ? parseFloat(req.body.latitude.toString())
           : null;
       }
       if (req.body.longitude !== undefined) {
-        updateData.longitude = req.body.longitude !== null && req.body.longitude !== '' 
-          ? parseFloat(req.body.longitude.toString()) 
+        updateData.longitude = req.body.longitude !== null && req.body.longitude !== ''
+          ? parseFloat(req.body.longitude.toString())
           : null;
       }
       if (req.body.images !== undefined) updateData.images = Array.isArray(req.body.images) ? req.body.images : [];
       if (req.body.eventDate !== undefined) {
-        updateData.eventDate = req.body.eventDate && req.body.eventDate !== '' 
-          ? new Date(req.body.eventDate) 
+        updateData.eventDate = req.body.eventDate && req.body.eventDate !== ''
+          ? new Date(req.body.eventDate)
           : null;
       }
       if (req.body.eventTime !== undefined) updateData.eventTime = req.body.eventTime || null;
@@ -660,7 +692,7 @@ router.patch(
       if (req.body.address !== undefined) updateData.address = req.body.address || null;
       if (req.body.questionResponses !== undefined) {
         updateData.questionResponses = req.body.questionResponses && typeof req.body.questionResponses === 'object' && !Array.isArray(req.body.questionResponses)
-          ? req.body.questionResponses 
+          ? req.body.questionResponses
           : null;
       }
       if (req.body.countie !== undefined) updateData.countie = req.body.countie || null;
@@ -2450,6 +2482,376 @@ router.get('/statistics', authenticate, requireAdmin, async (req: AuthRequest, r
         monthlyTransactions,
         lastTenUsers,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ==================== BLOGS ====================
+
+// CKEditor Image Upload
+router.post('/upload', authenticate, requireAdmin, upload.single('upload'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: { message: 'No file uploaded' } });
+  }
+  const url = `${process.env.SERVER_URL || 'http://localhost:3000'}/uploads/${req.file.filename}`;
+  res.json({
+    uploaded: true,
+    url: url
+  });
+});
+
+const slugify = (text: string) => {
+  const trMap: any = {
+    'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+  };
+  for (let key in trMap) {
+    text = text.replace(new RegExp(key, 'g'), trMap[key]);
+  }
+  return text
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-');
+};
+
+// Get all blogs (Admin)
+router.get(
+  '/blogs',
+  authenticate,
+  requireAdmin,
+  [
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('search').optional().isString(),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const search = req.query.search as string;
+
+      const where: any = {};
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const [blogs, total] = await Promise.all([
+        prisma.blog.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.blog.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: blogs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  '/blogs/public/tags',
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const blogs = await prisma.blog.findMany({
+        select: { tags: true },
+      });
+
+      const allTags = blogs.flatMap(blog => blog.tags);
+      const uniqueTags = Array.from(new Set(allTags)).filter(Boolean);
+
+      res.json({
+        success: true,
+        data: uniqueTags,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  '/blogs/public',
+  [
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('search').optional().isString(),
+    query('tag').optional().isString(),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const search = req.query.search as string;
+      const tag = req.query.tag as string;
+
+      const where: any = {};
+      if (search) {
+        where.OR = [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      if (tag) {
+        where.tags = { has: tag };
+      }
+
+      const [blogs, total] = await Promise.all([
+        prisma.blog.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.blog.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: blogs,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get('/blogs/public/:idOrSlug', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { idOrSlug } = req.params;
+
+    const blog = await prisma.blog.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug }
+        ]
+      },
+    });
+
+    if (!blog) {
+      throw new AppError('Blog bulunamadı', 404);
+    }
+
+    res.json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get single blog (Admin)
+router.get('/blogs/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const blog = await prisma.blog.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!blog) {
+      throw new AppError('Blog bulunamadı', 404);
+    }
+
+    res.json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+
+// Create blog (Admin)
+router.post(
+  '/blogs',
+  authenticate,
+  requireAdmin,
+  upload.single('image'),
+  [
+    body('title').isString().isLength({ min: 1 }).withMessage('Başlık zorunludur'),
+    body('content').isString().isLength({ min: 1 }).withMessage('İçerik zorunludur'),
+    body('tags').optional().custom((value) => {
+      if (typeof value === 'string') {
+        try {
+          JSON.parse(value);
+          return true;
+        } catch (e) {
+          return true; // Not JSON, might be comma separated string
+        }
+      }
+      return Array.isArray(value);
+    }),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+
+      const { title, content, tags, slug } = req.body;
+      const imageFile = (req as any).file;
+
+      if (!imageFile) {
+        throw new AppError('Blog görseli zorunludur', 400);
+      }
+
+      let parsedTags: string[] = [];
+      if (tags) {
+        if (Array.isArray(tags)) {
+          parsedTags = tags;
+        } else if (typeof tags === 'string') {
+          try {
+            parsedTags = JSON.parse(tags);
+          } catch (e) {
+            parsedTags = tags.split(',').map(t => t.trim());
+          }
+        }
+      }
+
+      const blog = await prisma.blog.create({
+        data: {
+          title,
+          content,
+          tags: parsedTags,
+          slug: slug ? slugify(slug) : slugify(title),
+          image: imageFile.filename,
+        },
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Blog başarıyla oluşturuldu',
+        data: blog,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Update blog (Admin)
+router.patch(
+  '/blogs/:id',
+  authenticate,
+  requireAdmin,
+  upload.single('image'),
+  [
+    body('title').optional().isString().isLength({ min: 1 }),
+    body('content').optional().isString().isLength({ min: 1 }),
+    body('tags').optional(),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+
+      const blog = await prisma.blog.findUnique({
+        where: { id: req.params.id },
+      });
+
+      if (!blog) {
+        throw new AppError('Blog bulunamadı', 404);
+      }
+
+      const { title, content, tags, slug } = req.body;
+      const imageFile = (req as any).file;
+
+      const updateData: any = {};
+      if (title !== undefined) {
+        updateData.title = title;
+        if (!slug) updateData.slug = slugify(title);
+      }
+      if (slug !== undefined) updateData.slug = slugify(slug);
+      if (content !== undefined) updateData.content = content;
+      if (imageFile) updateData.image = imageFile.filename;
+
+      if (tags !== undefined) {
+        let parsedTags: string[] = [];
+        if (Array.isArray(tags)) {
+          parsedTags = tags;
+        } else if (typeof tags === 'string') {
+          try {
+            parsedTags = JSON.parse(tags);
+          } catch (e) {
+            parsedTags = tags.split(',').map(t => t.trim());
+          }
+        }
+        updateData.tags = parsedTags;
+      }
+
+      const updatedBlog = await prisma.blog.update({
+        where: { id: req.params.id },
+        data: updateData,
+      });
+
+      res.json({
+        success: true,
+        message: 'Blog başarıyla güncellendi',
+        data: updatedBlog,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Delete blog (Admin)
+router.delete('/blogs/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const blog = await prisma.blog.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!blog) {
+      throw new AppError('Blog bulunamadı', 404);
+    }
+
+    // Optional: Delete image file from disk
+    if (blog.image) {
+      const filePath = path.join(process.cwd(), 'uploads', blog.image);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await prisma.blog.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({
+      success: true,
+      message: 'Blog başarıyla silindi',
     });
   } catch (error) {
     next(error);

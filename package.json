@@ -25,6 +25,7 @@
   "dependencies": {
     "@netgsm/sms": "^1.1.0",
     "@prisma/client": "^5.20.0",
+    "@types/multer": "^2.0.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -35,6 +36,7 @@
     "fs": "^0.0.1-security",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "process": "^0.11.10"
   },
   "devDependencies": {

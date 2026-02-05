@@ -95,6 +95,20 @@ model User {
   @@map("users")
 }
 
+model Blog {
+  id      String   @id @default(uuid())
+  title   String
+  content String
+  tags    String[]
+
+  slug String?
+
+  image String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Demand {
   id           String       @id @default(uuid())
   userId       String

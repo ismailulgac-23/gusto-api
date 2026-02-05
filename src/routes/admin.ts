@@ -2506,13 +2506,19 @@ const slugify = (text: string) => {
   const trMap: any = {
     'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
   };
+
+  let result = text;
   for (let key in trMap) {
-    text = text.replace(new RegExp(key, 'g'), trMap[key]);
+    result = result.replace(new RegExp(key, 'g'), trMap[key]);
   }
-  return text
+
+  return result
     .toLowerCase()
-    .replace(/[^\w ]+/g, '')
-    .replace(/ +/g, '-');
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove non-word (except underscore), non-space, non-dash characters
+    .replace(/[\s_-]+/g, '-') // Replace spaces, underscores or multiple dashes with a single dash
+    .replace(/^-+/, '')       // Trim dashes from start
+    .replace(/-+$/, '');      // Trim dashes from end
 };
 
 // Get all blogs (Admin)

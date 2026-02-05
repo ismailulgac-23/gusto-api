@@ -37,7 +37,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "process": "^0.11.10"
+    "process": "^0.11.10",
+    "slugify": "^1.6.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

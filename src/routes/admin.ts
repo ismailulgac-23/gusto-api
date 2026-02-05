@@ -7,6 +7,7 @@ import { validateRequest } from '../middleware/validator';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import slugify from 'slugify';
 
 // Multer storage configuration
 const storage = multer.diskStorage({
@@ -2502,23 +2503,12 @@ router.post('/upload', authenticate, requireAdmin, upload.single('upload'), (req
   });
 });
 
-const slugify = (text: string) => {
-  const trMap: any = {
-    'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
-  };
-
-  let result = text;
-  for (let key in trMap) {
-    result = result.replace(new RegExp(key, 'g'), trMap[key]);
-  }
-
-  return result
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove non-word (except underscore), non-space, non-dash characters
-    .replace(/[\s_-]+/g, '-') // Replace spaces, underscores or multiple dashes with a single dash
-    .replace(/^-+/, '')       // Trim dashes from start
-    .replace(/-+$/, '');      // Trim dashes from end
+const generateSlug = (text: string) => {
+  return slugify(text, {
+    lower: true,
+    strict: true,
+    locale: 'tr'
+  });
 };
 
 // Get all blogs (Admin)
@@ -2748,7 +2738,7 @@ router.post(
           title,
           content,
           tags: parsedTags,
-          slug: slug ? slugify(slug) : slugify(title),
+          slug: slug ? generateSlug(slug) : generateSlug(title),
           image: imageFile.filename,
         },
       });
@@ -2796,9 +2786,9 @@ router.patch(
       const updateData: any = {};
       if (title !== undefined) {
         updateData.title = title;
-        if (!slug) updateData.slug = slugify(title);
+        if (!slug) updateData.slug = generateSlug(title);
       }
-      if (slug !== undefined) updateData.slug = slugify(slug);
+      if (slug !== undefined) updateData.slug = generateSlug(slug);
       if (content !== undefined) updateData.content = content;
       if (imageFile) updateData.image = imageFile.filename;
 

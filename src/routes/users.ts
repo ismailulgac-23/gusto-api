@@ -37,10 +37,10 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
       throw new AppError('User not found', 404);
     }
 
-    // Transform categories to array of IDs (can be parent or child categories)
+    // Transform categories to array of objects
     const userData = {
       ...user,
-      categories: user.categories.map(uc => uc.category.id),
+      categories: user.categories.map(uc => uc.category),
       isAdmin: user.isAdmin,
       isActive: user.isActive,
       createdAt: user.createdAt,
@@ -109,28 +109,28 @@ router.put(
             if (typeof cat === 'string' && cat.trim() === '') return false;
             return true;
           });
-          
+
           if (validCategories.length > 0) {
             // Find categories by ID or name (support both for backward compatibility)
-          const categoryRecords = await prisma.category.findMany({
-            where: {
-              OR: [
+            const categoryRecords = await prisma.category.findMany({
+              where: {
+                OR: [
                   { id: { in: validCategories } },
                   { name: { in: validCategories } },
-              ],
-              isActive: true,
-            },
-          });
+                ],
+                isActive: true,
+              },
+            });
 
-          // Create UserCategory records
+            // Create UserCategory records
             if (categoryRecords.length > 0) {
-          await prisma.userCategory.createMany({
-            data: categoryRecords.map(cat => ({
-              userId: req.userId!,
-              categoryId: cat.id,
-            })),
-            skipDuplicates: true,
-          });
+              await prisma.userCategory.createMany({
+                data: categoryRecords.map(cat => ({
+                  userId: req.userId!,
+                  categoryId: cat.id,
+                })),
+                skipDuplicates: true,
+              });
             }
           }
         }
@@ -171,10 +171,10 @@ router.put(
         },
       });
 
-      // Transform categories to array of IDs (can be parent or child categories)
+      // Transform categories to array of objects
       const userData = {
         ...user,
-        categories: user.categories.map(uc => uc.category.id),
+        categories: user.categories.map(uc => uc.category),
         isAdmin: user.isAdmin,
         isActive: user.isActive,
         createdAt: user.createdAt,
@@ -244,7 +244,7 @@ router.get('/:id', async (req, res, next) => {
       completedJobs: user.completedJobs,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      categories: user.categories.map(uc => uc.category.id),
+      categories: user.categories.map(uc => uc.category),
       _count: user._count,
     };
 
@@ -277,6 +277,88 @@ router.get('/:id/reviews', async (req, res, next) => {
     res.json({
       success: true,
       data: reviews,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all providers (public list)
+router.get('/public/providers', async (req, res, next) => {
+  try {
+    const { categoryId, search, page = '1', limit = '10' } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {
+      userType: 'PROVIDER',
+      isActive: true,
+      isAdmin: false,
+    };
+
+    if (categoryId) {
+      where.categories = {
+        some: {
+          categoryId: categoryId as string,
+        },
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { companyName: { contains: search as string, mode: 'insensitive' } },
+      ];
+    }
+
+    const [providers, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          companyName: true,
+          profileImage: true,
+          rating: true,
+          ratingCount: true,
+          location: true,
+          bio: true,
+          completedJobs: true,
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  icon: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { rating: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    // Transform categories
+    const transformedProviders = providers.map(p => ({
+      ...p,
+      categories: p.categories.map(uc => uc.category),
+    }));
+
+    res.json({
+      success: true,
+      data: transformedProviders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error) {
     next(error);

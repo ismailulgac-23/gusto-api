@@ -19,6 +19,9 @@ router.get(
     query("status")
       .optional()
       .isIn(["ACTIVE", "CLOSED", "COMPLETED", "CANCELLED"]),
+    query("cityId").optional().isString(),
+    query("search").optional().isString(),
+    query("allOpportunities").optional().isBoolean(),
     query("page").optional().isInt({ min: 1 }),
     query("limit").optional().isInt({ min: 1, max: 100 }),
   ],
@@ -29,8 +32,16 @@ router.get(
         throw new AppError(errors.array()[0].msg, 400);
       }
 
-      const { category, status = "ACTIVE", page = "1", limit = "10", cityId } = req.query;
-      
+      const {
+        category,
+        status = "ACTIVE",
+        cityId,
+        search,
+        allOpportunities,
+        page = "1",
+        limit = "10"
+      } = req.query;
+
 
       // Get current user to check type and categories
       const currentUser = await prisma.user.findUnique({
@@ -66,10 +77,14 @@ router.get(
       };
 
       // If user is PROVIDER, filter by their categories and their subcategories
+      // Unless allOpportunities=true is specified
       let allowedCategoryIds: string[] = [];
+      const isAllOpps = String(allOpportunities) === "true";
+
       if (
         currentUser?.userType === "PROVIDER" &&
-        currentUser.categories.length > 0
+        currentUser.categories.length > 0 &&
+        !isAllOpps
       ) {
         const userCategoryIds = currentUser.categories.map(
           (uc) => uc.categoryId
@@ -108,15 +123,34 @@ router.get(
           };
         }
       } else if (category) {
-        // Non-provider or no categories, but category filter provided
+        // Non-provider, no categories, OR allOpportunities=true, filtered by specific category
         const categoryRecord = await prisma.category.findFirst({
           where: {
             OR: [{ id: category as string }, { name: category as string }],
           },
         });
         if (categoryRecord) {
-          where.categoryId = categoryRecord.id;
+          // If we filter by a category, we should also include its children
+          const allCatIds = await getAllChildCategoryIds(categoryRecord.id);
+          where.categoryId = { in: allCatIds };
         }
+      }
+
+      // City Filter
+      if (cityId) {
+        where.cities = {
+          some: {
+            cityId: cityId as string
+          }
+        };
+      }
+
+      // Search Filter
+      if (search) {
+        where.OR = [
+          { title: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+        ];
       }
 
       if (status) where.status = status;
@@ -126,13 +160,13 @@ router.get(
         where.isApproved = true;
       }
 
-      
+
 
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
       const skip = (pageNum - 1) * limitNum;
 
-      
+
 
       const [demands, total] = await Promise.all([
         prisma.demand.findMany({
@@ -153,18 +187,17 @@ router.get(
                 icon: true,
               },
             },
-            // cities: Geçici olarak kaldırıldı - Prisma generate edildikten sonra geri eklenecek
-            // cities: {
-            //   include: {
-            //     city: {
-            //       select: {
-            //         id: true,
-            //         name: true,
-            //         isActive: true,
-            //       },
-            //     },
-            //   },
-            // },
+            cities: {
+              include: {
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                  },
+                },
+              },
+            },
             _count: {
               select: {
                 offers: true,
@@ -209,6 +242,7 @@ router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
             id: true,
             name: true,
             phoneNumber: true,
+            email: true,
             profileImage: true,
             rating: true,
             location: true,
@@ -407,9 +441,8 @@ router.post(
           .map((err) => {
             const field = "param" in err ? err.param : "field";
             const value = "value" in err ? err.value : "N/A";
-            return `${field} (${typeof value}): ${
-              err.msg
-            } - Received: ${JSON.stringify(value)}`;
+            return `${field} (${typeof value}): ${err.msg
+              } - Received: ${JSON.stringify(value)}`;
           })
           .join(", ");
         throw new AppError(`Validation error: ${errorMessages}`, 400);
@@ -451,7 +484,7 @@ router.post(
       if (cityIds && Array.isArray(cityIds) && cityIds.length > 0) {
         // Sadece ilk şehri al (tek şehir seçimi)
         const cityId = cityIds[0];
-        
+
         // Validate city ID exists and is active
         const city = await prisma.city.findUnique({
           where: {
@@ -705,17 +738,6 @@ router.delete(
 // Get user's demands
 router.get("/user/me", authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { status } = req.query;
-
-  
-    
-
-    const allowedStatuses = ["ACTIVE", "CLOSED", "COMPLETED", "CANCELLED"];
-    const statusFilter =
-      typeof status === "string" && allowedStatuses.includes(status)
-        ? status
-        : undefined;
-
     const demands = await prisma.demand.findMany({
       where: {
         userId: req.userId,
@@ -750,6 +772,41 @@ router.get("/user/me", authenticate, async (req: AuthRequest, res, next) => {
       data: {
         demands,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get user's public demands (for profile)
+router.get("/user/:id", async (req, res, next) => {
+  try {
+    const demands = await prisma.demand.findMany({
+      where: {
+        userId: req.params.id,
+        isApproved: true,
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+          },
+        },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    res.json({
+      success: true,
+      data: demands,
     });
   } catch (error) {
     next(error);

@@ -12,10 +12,18 @@ router.get('/', async (req, res, next) => {
     const includeChildren = req.query.includeChildren === 'true';
     const parentId = req.query.parentId as string | undefined;
     const onlyRoot = req.query.onlyRoot === 'true';
+    const search = req.query.search as string | undefined;
 
-    let where: any = {};
-    
-    if (parentId) {
+    let where: any = {
+      isActive: true
+    };
+
+    if (search) {
+      where.name = {
+        contains: search,
+        mode: 'insensitive'
+      };
+    } else if (parentId) {
       where.parentId = parentId;
     } else if (onlyRoot) {
       where.parentId = null;
@@ -51,6 +59,13 @@ router.get('/', async (req, res, next) => {
 
     const categories = await prisma.category.findMany({
       where,
+      include: {
+        parent: {
+          select: {
+            name: true
+          }
+        }
+      },
       orderBy: {
         rank: "asc"
       }
@@ -64,8 +79,8 @@ router.get('/', async (req, res, next) => {
       );
     }
 
-    console.log('categoriesWithChildren',categoriesWithChildren);
-    
+    console.log('categoriesWithChildren', categoriesWithChildren);
+
 
     res.json({
       success: true,
@@ -95,7 +110,7 @@ router.get('/:id', async (req, res, next) => {
         },
       },
     });
-    
+
     if (!category) {
       return res.status(404).json({
         success: false,

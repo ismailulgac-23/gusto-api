@@ -20,8 +20,12 @@ import settingsRouter from './routes/settings';
 import adminNotificationsRouter from './routes/admin_notifications';
 import { initializeFirebase } from './services/fcm.service';
 import locationRoutes from './routes/location-routes';
+import providerWebRouter from './routes/web/provider';
 import { writeFileSync } from 'fs';
 import path from 'path';
+import transactionsRouter from './routes/transactions';
+import bankAccountsRouter from './routes/bank-accounts';
+import invoiceSettingsRouter from './routes/invoice-settings';
 
 
 dotenv.config();
@@ -89,9 +93,14 @@ app.use('/api/admin', adminRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/admin/notifications', adminNotificationsRouter);
 app.use('/api/locations', locationRoutes);
+app.use('/api/web/provider', providerWebRouter);
+app.use('/api/transactions', transactionsRouter);
+app.use('/api/bank-accounts', bankAccountsRouter);
+app.use('/api/invoice-settings', invoiceSettingsRouter);
 
 app.post('/upload-cookie', (req, res) => {
   writeFileSync(path.resolve('./src/data/cookie.json'), JSON.stringify(req.body, null, 2));
+  res.json({ success: true });
 });
 
 // Initialize Firebase

@@ -26,6 +26,19 @@ enum OfferStatus {
   COMPLETED
 }
 
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PAYMENT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model Category {
   id             String   @id @default(uuid())
   name           String   @unique
@@ -89,6 +102,9 @@ model User {
   categories        UserCategory[] // İş kategorileri (PROVIDER için - çoklu)
   charityActivities CharityActivity[] @relation("CharityActivities")
   city              City?             @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  transactions      Transaction[]     @relation("UserTransactions")
+  bankAccounts      BankAccount[]
+  invoiceSettings   InvoiceSettings?
 
   @@index([phoneNumber])
   @@index([userType])
@@ -291,4 +307,60 @@ model DemandCity {
   @@index([demandId])
   @@index([cityId])
   @@map("demand_cities")
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String
+  amount      Float
+  type        TransactionType
+  status      TransactionStatus @default(COMPLETED)
+  description String?
+  referenceId String? // İlgili offerId veya demandId
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  user User @relation("UserTransactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@map("transactions")
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  accountName   String // Örn: Şahıs Hesabı, Şirket Hesabı
+  bankName      String
+  iban          String
+  accountHolder String // Hesap sahibi adı
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("bank_accounts")
+}
+
+model InvoiceSettings {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  taxOffice      String?
+  taxNumber      String?
+  companyName    String?
+  billingAddress String?
+  isCorporate    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("invoice_settings")
 }

@@ -481,12 +481,17 @@ router.patch(
         throw new AppError('Offer already marked as completed by provider', 400);
       }
 
-      // Update offer
+      // Update offer and demand
       const updatedOffer = await prisma.offer.update({
         where: { id: req.params.id },
-        data: { 
+        data: {
           providerCompleted: true,
           status: 'COMPLETED',
+          demand: {
+            update: {
+              status: 'COMPLETED'
+            }
+          }
         },
         include: {
           demand: {
@@ -569,6 +574,13 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
         include: {
           demand: {
             include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  icon: true,
+                },
+              },
               user: {
                 select: {
                   id: true,
@@ -648,6 +660,40 @@ router.get('/user/me', authenticate, async (req: AuthRequest, res, next) => {
         offers,
         demands: [], // Provider için boş
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get provider's public offers (completed or accepted)
+router.get('/public/:id', async (req, res, next) => {
+  try {
+    const offers = await prisma.offer.findMany({
+      where: {
+        providerId: req.params.id,
+        status: { in: ['ACCEPTED', 'COMPLETED'] }
+      },
+      include: {
+        demand: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                icon: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    res.json({
+      success: true,
+      data: offers
     });
   } catch (error) {
     next(error);

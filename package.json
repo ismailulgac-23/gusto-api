@@ -12,7 +12,8 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "create-admin": "tsx scripts/create-admin.ts",
-    "create-categories": "tsx scripts/create-categories.ts"
+    "create-categories": "tsx scripts/create-categories.ts",
+    "create-tx": "tsx scripts/tx-seed.ts"
   },
   "keywords": [
     "ihale",

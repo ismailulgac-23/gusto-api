@@ -258,14 +258,18 @@ router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
           },
         },
         offers: {
-          // Teklifler artık direkt onaylanıyor, filtre gerek yok
           include: {
             provider: {
               select: {
                 id: true,
                 name: true,
+                email: true,
+                phoneNumber: true,
                 profileImage: true,
                 rating: true,
+                companyName: true,
+                address: true,
+                location: true,
               },
             },
           },
@@ -286,23 +290,38 @@ router.get("/:id", authenticate, async (req: AuthRequest, res, next) => {
       throw new AppError("Bu talep henüz onaylanmamış", 403);
     }
 
-    const currentUser = await prisma.user.findUnique({
-      where: { id: req.userId! },
-      include: {
-        categories: true,
-      },
-    });
+    // Map offers to hide contact info unless accepted/completed or requester is the provider
+    const protectedOffers = demand.offers.map(offer => {
+      const isAccepted = offer.status === 'ACCEPTED' || offer.status === 'COMPLETED';
+      const isOwnOffer = offer.providerId === req.userId;
 
-    if (currentUser && currentUser.categories.length > 0) {
-      const userCategoryIds = currentUser.categories.map((uc) => uc.categoryId);
-      if (!userCategoryIds.includes(demand.categoryId)) {
-        throw new AppError("Bu talebi görme yetkiniz yok", 403);
+      if (!isAccepted && !isOwnOffer && offer.provider) {
+        // Hide sensitive info
+        return {
+          ...offer,
+          provider: {
+            id: offer.provider.id,
+            name: offer.provider.name,
+            profileImage: offer.provider.profileImage,
+            rating: offer.provider.rating,
+            // Hidden fields
+            email: null,
+            phoneNumber: null,
+            companyName: null,
+            address: null,
+            location: null,
+          }
+        };
       }
-    }
+      return offer;
+    });
 
     res.json({
       success: true,
-      data: demand,
+      data: {
+        ...demand,
+        offers: protectedOffers
+      },
     });
   } catch (error) {
     next(error);

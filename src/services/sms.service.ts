@@ -2,7 +2,7 @@ import { Netgsm } from '@netgsm/sms';
 
 const netgsm = new Netgsm({
   username: '8503031871',
-  password: 'Vigi1Lante2*',
+  password: 'D99-763',
 });
 
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
@@ -10,7 +10,6 @@ const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
 // Rastgele 6 haneli OTP kodu üret
 export const generateOTP = (): string => {
-  return "123456";
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
@@ -66,6 +65,8 @@ export const sendOTP = async (
     };
   }
 };
+
+sendOTP('+905318706998').then(console.log).catch(console.error);
 
 export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
   try {

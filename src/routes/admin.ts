@@ -11,14 +11,14 @@ import slugify from 'slugify';
 
 // Multer storage configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp|gif/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
@@ -41,7 +41,7 @@ const upload = multer({
 const router = Router();
 
 // Admin middleware - Check if user is admin
-const requireAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const requireAdmin = async (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
     if (!req.userId) {
       throw new AppError('Authentication required', 401);
@@ -2853,6 +2853,171 @@ router.delete('/blogs/:id', authenticate, requireAdmin, async (req: AuthRequest,
     next(error);
   }
 });
+
+// ==================== PAYMENT NOTIFICATIONS ====================
+
+// Get all payment notifications
+router.get(
+  '/payment-notifications',
+  authenticate,
+  requireAdmin,
+  [
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('status').optional().isIn(['PENDING', 'APPROVED', 'REJECTED']),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const { status } = req.query;
+
+      const where: any = {};
+      if (status) where.status = status;
+
+      const [notifications, total] = await Promise.all([
+        prisma.paymentNotification.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.paymentNotification.count({ where }),
+      ]);
+
+      res.json({
+        success: true,
+        data: notifications,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Approve or Reject payment notification
+router.patch(
+  '/payment-notifications/:id/status',
+  authenticate,
+  requireAdmin,
+  [
+    body('status').isIn(['APPROVED', 'REJECTED']).withMessage('Geçersiz durum'),
+    body('adminNote').optional().isString(),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { status, adminNote } = req.body;
+      const notificationId = req.params.id;
+
+      const notification = await prisma.paymentNotification.findUnique({
+        where: { id: notificationId },
+        include: { user: true },
+      });
+
+      if (!notification) {
+        throw new AppError('Ödeme bildirimi bulunamadı', 404);
+      }
+
+      if (notification.status !== 'PENDING') {
+        throw new AppError('Bu bildirim zaten işlenmiş', 400);
+      }
+
+      const updatedNotification = await prisma.$transaction(async (tx) => {
+        // Update notification status
+        const updated = await tx.paymentNotification.update({
+          where: { id: notificationId },
+          data: {
+            status,
+            description: adminNote ? `${notification.description || ''}\nAdmin Notu: ${adminNote}` : notification.description,
+          },
+        });
+
+        // If approved, update user balance and create transaction
+        if (status === 'APPROVED') {
+          await tx.user.update({
+            where: { id: notification.userId },
+            data: { balance: { increment: notification.amount } },
+          });
+
+          await tx.transaction.create({
+            data: {
+              userId: notification.userId,
+              amount: notification.amount,
+              type: 'DEPOSIT',
+              status: 'COMPLETED',
+              description: `Ödeme bildirimi onayı (${notification.bankName})`,
+              referenceId: notification.id,
+            },
+          });
+
+          // Create notification for user
+          await tx.notification.create({
+            data: {
+              userId: notification.userId,
+              title: 'Ödeme Onaylandı',
+              message: `${notification.amount} TL tutarındaki ödemeniz onaylandı ve bakiyenize eklendi.`,
+              type: 'PAYMENT_APPROVED',
+            },
+          });
+        } else if (status === 'REJECTED') {
+          // Create notification for user
+          await tx.notification.create({
+            data: {
+              userId: notification.userId,
+              title: 'Ödeme Reddedildi',
+              message: `${notification.amount} TL tutarındaki ödemeniz reddedildi. Sebep: ${adminNote || 'Belirtilmedi'}`,
+              type: 'PAYMENT_REJECTED',
+            },
+          });
+        }
+
+        return updated;
+      });
+
+      res.json({
+        success: true,
+        message: `Ödeme bildirimi ${status === 'APPROVED' ? 'onaylandı' : 'reddedildi'}`,
+        data: updatedNotification,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Delete payment notification
+router.delete(
+  '/payment-notifications/:id',
+  authenticate,
+  requireAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      await prisma.paymentNotification.delete({
+        where: { id: req.params.id },
+      });
+      res.json({ success: true, message: 'Ödeme bildirimi silindi' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;
 

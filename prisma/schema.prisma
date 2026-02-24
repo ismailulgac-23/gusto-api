@@ -65,6 +65,12 @@ model Category {
   @@map("categories")
 }
 
+enum PaymentNotificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(uuid())
   phoneNumber  String   @unique
@@ -94,17 +100,18 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
-  demands           Demand[]          @relation("UserDemands")
-  offers            Offer[]           @relation("UserOffers")
-  notifications     Notification[]
-  reviews           Review[]          @relation("ReviewsByUser")
-  reviewsReceived   Review[]          @relation("ReviewsForUser")
-  categories        UserCategory[] // İş kategorileri (PROVIDER için - çoklu)
-  charityActivities CharityActivity[] @relation("CharityActivities")
-  city              City?             @relation(fields: [cityId], references: [id], onDelete: SetNull)
-  transactions      Transaction[]     @relation("UserTransactions")
-  bankAccounts      BankAccount[]
-  invoiceSettings   InvoiceSettings?
+  demands              Demand[]              @relation("UserDemands")
+  offers               Offer[]               @relation("UserOffers")
+  notifications        Notification[]
+  reviews              Review[]              @relation("ReviewsByUser")
+  reviewsReceived      Review[]              @relation("ReviewsForUser")
+  categories           UserCategory[] // İş kategorileri (PROVIDER için - çoklu)
+  charityActivities    CharityActivity[]     @relation("CharityActivities")
+  city                 City?                 @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  transactions         Transaction[]         @relation("UserTransactions")
+  bankAccounts         BankAccount[]
+  invoiceSettings      InvoiceSettings?
+  paymentNotifications PaymentNotification[] @relation("UserPaymentNotifications")
 
   @@index([phoneNumber])
   @@index([userType])
@@ -363,4 +370,23 @@ model InvoiceSettings {
 
   @@index([userId])
   @@map("invoice_settings")
+}
+
+model PaymentNotification {
+  id          String                    @id @default(uuid())
+  userId      String
+  amount      Float
+  paymentDate DateTime
+  bankName    String
+  description String?
+  status      PaymentNotificationStatus @default(PENDING)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  // Relations
+  user User @relation("UserPaymentNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("payment_notifications")
 }

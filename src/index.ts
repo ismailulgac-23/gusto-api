@@ -26,6 +26,7 @@ import path from 'path';
 import transactionsRouter from './routes/transactions';
 import bankAccountsRouter from './routes/bank-accounts';
 import invoiceSettingsRouter from './routes/invoice-settings';
+import paymentNotificationsRouter from './routes/payment-notifications';
 
 
 dotenv.config();
@@ -97,6 +98,7 @@ app.use('/api/web/provider', providerWebRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/bank-accounts', bankAccountsRouter);
 app.use('/api/invoice-settings', invoiceSettingsRouter);
+app.use('/api/payment-notifications', paymentNotificationsRouter);
 
 app.post('/upload-cookie', (req, res) => {
   writeFileSync(path.resolve('./src/data/cookie.json'), JSON.stringify(req.body, null, 2));

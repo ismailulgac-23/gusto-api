@@ -46,7 +46,7 @@ export const sendOTP = async (
       encoding: 'TR',
       messages: [
         {
-          msg: `İhale App doğrulama kodunuz: ${otpCode}`,
+          msg: `GustoApp doğrulama kodunuz: ${otpCode}, kimseyle paylaşmayın!`,
           no: cleanPhone,
         },
       ],

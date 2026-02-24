@@ -1,8 +1,8 @@
 import { Netgsm } from '@netgsm/sms';
 
 const netgsm = new Netgsm({
-  username: process.env.NETGSM_USERNAME || '8503031871',
-  password: process.env.NETGSM_PASSWORD || 'Vigi1Lante2*',
+  username: '8503031871',
+  password: 'Vigi1Lante2*',
 });
 
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
@@ -31,18 +31,18 @@ export const sendOTP = async (
       expiresAt: Date.now() + 5 * 60 * 1000, // 5 dakika
     });
 
-    // Development modunda SMS göndermeden loglayalım
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[SMS] Phone: ${cleanPhone}, OTP: ${otpCode}`);
-      return {
-        success: true,
-        jobid: 'dev-' + Date.now(),
-      };
-    }
-
+    /*     // Development modunda SMS göndermeden loglayalım
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SMS] Phone: ${cleanPhone}, OTP: ${otpCode}`);
+          return {
+            success: true,
+            jobid: 'dev-' + Date.now(),
+          };
+        }
+     */
     // Production'da gerçek SMS gönder
     const response = await netgsm.sendRestSms({
-      msgheader: process.env.NETGSM_MSGHEADER || '8503031871',
+      msgheader: "B.Yukselcan",
       encoding: 'TR',
       messages: [
         {
@@ -67,7 +67,6 @@ export const sendOTP = async (
   }
 };
 
-// OTP doğrula
 export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
   try {
     // Telefon numarasını temizle

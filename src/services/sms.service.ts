@@ -1,9 +1,10 @@
-import { Netgsm } from '@netgsm/sms';
+import https from 'https';
 
-const netgsm = new Netgsm({
+const NETGSM_CONFIG = {
   username: '8503031871',
   password: 'D99-763',
-});
+  header: 'B.Yukselcan',
+};
 
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
@@ -13,12 +14,24 @@ export const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+const ERROR_CODES: Record<string, string> = {
+  '20': 'Mesaj metni ya da mesaj boyunu kontrol ediniz.',
+  '30': 'Geçersiz kullanıcı adı, şifre veya API erişim yetkisi hatası.',
+  '40': 'Gönderici adını (msgheader) kontrol ediniz.',
+  '41': 'Gönderici adını kontrol ediniz.',
+  '50': 'Gönderilen numarayı kontrol ediniz.',
+  '60': 'Hesabınızda OTP SMS Paketi tanımlı değildir.',
+  '70': 'Input parametrelerini kontrol ediniz.',
+  '80': 'Sorgulama sınır aşımı (dakikada max 100 adet).',
+  '100': 'Sistem hatası.',
+};
+
 // OTP gönder
 export const sendOTP = async (
   phoneNumber: string
 ): Promise<{ success: boolean; jobid?: string; error?: string }> => {
   try {
-    // Telefon numarasını temizle (başındaki +90, 0 vb. karakterleri kaldır)
+    // Telefon numarasını temizle
     const cleanPhone = phoneNumber.replace(/^\+?90/, '').replace(/^0/, '');
 
     // 6 haneli OTP kodu oluştur
@@ -27,36 +40,75 @@ export const sendOTP = async (
     // OTP'yi 5 dakika süreyle sakla
     otpStore.set(cleanPhone, {
       code: otpCode,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 dakika
+      expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
-    /*     // Development modunda SMS göndermeden loglayalım
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[SMS] Phone: ${cleanPhone}, OTP: ${otpCode}`);
-          return {
-            success: true,
-            jobid: 'dev-' + Date.now(),
-          };
-        }
-     */
-    // Production'da gerçek SMS gönder
-    const response = await netgsm.sendRestSms({
-      msgheader: "B.Yukselcan",
-      encoding: 'TR',
-      messages: [
-        {
-          msg: `GustoApp doğrulama kodunuz: ${otpCode}, kimseyle paylaşmayın!`,
-          no: cleanPhone,
+    const message = `GustoApp doğrulama kodunuz: ${otpCode}, kimseyle paylaşmayın!`;
+
+    const xmlData = `<?xml version="1.0"?>
+<mainbody>
+   <header>
+       <usercode>${NETGSM_CONFIG.username}</usercode>
+       <password>${NETGSM_CONFIG.password}</password>
+       <msgheader>${NETGSM_CONFIG.header}</msgheader>
+   </header>
+   <body>
+       <msg>${message}</msg>
+       <no>${cleanPhone}</no>
+   </body>
+</mainbody>`;
+
+    return new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.netgsm.com.tr',
+        path: '/sms/send/otp',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml',
+          'Content-Length': Buffer.byteLength(xmlData),
         },
-      ],
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          try {
+            // Basit XML parsing
+            const codeMatch = data.match(/<code>(.*?)<\/code>/);
+            const jobidMatch = data.match(/<jobID>(.*?)<\/jobID>/);
+
+            const code = codeMatch ? codeMatch[1] : null;
+            const jobid = jobidMatch ? jobidMatch[1] : null;
+
+            if (code && ERROR_CODES[code]) {
+              console.error(`[SMS] Netgsm Error ${code}: ${ERROR_CODES[code]}`);
+              resolve({
+                success: false,
+                error: ERROR_CODES[code],
+              });
+            } else {
+              console.log(`[SMS] Sent to ${cleanPhone}, JobID: ${jobid}`);
+              resolve({
+                success: true,
+                jobid: jobid || undefined,
+              });
+            }
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        reject(e);
+      });
+
+      req.write(xmlData);
+      req.end();
     });
-
-    console.log(`[SMS] Sent to ${cleanPhone}, JobID: ${response.jobid}`);
-
-    return {
-      success: true,
-      jobid: response.jobid,
-    };
   } catch (error: any) {
     console.error('[SMS] Error:', error);
     return {
@@ -65,8 +117,6 @@ export const sendOTP = async (
     };
   }
 };
-
-sendOTP('+905318706998').then(console.log).catch(console.error);
 
 export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
   try {
@@ -101,6 +151,7 @@ export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
     return false;
   }
 };
+
 
 // Sürekli kontrol için temizlik fonksiyonu
 setInterval(() => {

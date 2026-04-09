@@ -50,6 +50,8 @@ const corsOptions = {
       'http://127.0.0.1:3002',
       'http://127.0.0.1:3000',
       'http://192.168.1.171:3002',
+      'https://gustoapp.net',
+      'https://www.gustoapp.net',
       'https://api.gustoapp.net',
       'https://blog.gustoapp.net',
       process.env.CORS_ORIGIN
@@ -122,9 +124,8 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🌐 CORS enabled for: http://localhost:3001, http://localhost:3000`);
-  console.log(`🔐 Admin login: http://localhost:${PORT}/api/auth/admin/login`);
+  console.log(`🔗 Health check: ${process.env.APP_URL || `http://localhost:${PORT}`}/health`);
+  console.log(`🌐 Frontend URL: ${process.env.WEB_URL || 'http://localhost:3001'}`);
+  console.log(`🔐 Admin login: ${(process.env.APP_URL || `http://localhost:${PORT}`)}/api/auth/admin/login`);
 });
-
 

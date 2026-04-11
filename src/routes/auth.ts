@@ -70,19 +70,6 @@ router.post(
         where: { phoneNumber: normalizedPhone },
       });
 
-      // Eğer kullanıcı varsa ve password yoksa, ilk giriş için otomatik parola oluştur
-      if (user && !user.password) {
-        // Rastgele 6 haneli parola oluştur (telefon numarasının son 6 hanesi + rastgele sayı)
-        const randomPassword = Math.floor(100000 + Math.random() * 900000).toString();
-        const hashedPassword = await bcrypt.hash(randomPassword, 10);
-        
-        // Kullanıcının parolasını güncelle
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { password: hashedPassword },
-        });
-      }
-
       if (!user) {
         // Eğer kullanıcı yoksa ve userType da yoksa, bu bir login denemesi
         // Kullanıcıyı kayıt sayfasına yönlendirmek için daha açıklayıcı hata
@@ -530,4 +517,3 @@ router.get(
 );
 
 export default router;
-

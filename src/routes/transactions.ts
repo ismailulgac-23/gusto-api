@@ -24,11 +24,25 @@ interface DepositInitiateBody {
 }
 
 function parseAmount(value: unknown): number {
-  const amount = typeof value === 'string' ? Number(value.replace(',', '.')) : Number(value);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new AppError('Geçerli bir yükleme tutarı giriniz.', 400);
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (!/^\d+$/.test(normalized)) {
+      throw new AppError('Yükleme tutarı yalnızca tam sayı olabilir.', 400);
+    }
+
+    const parsed = Number(normalized);
+    if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+      throw new AppError('Geçerli bir yükleme tutarı giriniz.', 400);
+    }
+
+    return parsed;
   }
-  return Number(amount.toFixed(2));
+
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    throw new AppError('Yükleme tutarı yalnızca tam sayı olabilir.', 400);
+  }
+
+  return value;
 }
 
 function normalizeCardNumber(value: string): string {
@@ -53,8 +67,7 @@ function getClientIp(req: AuthRequest): string {
 }
 
 function buildWalletRedirectUrl(status: 'success' | 'error', orderId?: string, message?: string): string {
-  const redirectUrl = new URL('/provider/wallet', getWebUrl());
-  redirectUrl.searchParams.set('payment', status);
+  const redirectUrl = new URL(`/provider/wallet/${status}`, getWebUrl());
   if (orderId) {
     redirectUrl.searchParams.set('orderId', orderId);
   }
@@ -302,6 +315,7 @@ router.get('/deposit/status/:orderId', authenticate, async (req: AuthRequest, re
         amount: transaction.amount,
         status: transaction.status,
         message,
+        description: transaction.description,
         createdAt: transaction.createdAt,
         updatedAt: transaction.updatedAt,
       },

@@ -19,7 +19,6 @@ router.post(
     try {
       const { phoneNumber } = req.body;
 
-      // SMS gönder
       const result = await sendOTP(phoneNumber);
 
       if (!result.success) {
@@ -113,7 +112,7 @@ router.post(
             email: email || null,
             companyName: companyName || null,
             address: address || null,
-            
+
             ...(cityId ? { cityId } : {}),
             categories: {
               create: categoryIds.map(categoryId => ({
@@ -444,12 +443,12 @@ router.get(
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const authHeader = req.headers.authorization || req.headers.token;
-      
+
       if (!authHeader) {
         throw new AppError('Authentication required', 401);
       }
 
-      const token = typeof authHeader === 'string' 
+      const token = typeof authHeader === 'string'
         ? (authHeader.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : authHeader)
         : '';
 

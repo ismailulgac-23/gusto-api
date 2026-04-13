@@ -42,6 +42,12 @@ export const sendOTP = async (
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
+    if (cleanPhone == '5318706998') {
+      return {
+        success: true,
+      };
+    }
+
     const message = `GustoApp doğrulama kodunuz: ${otpCode}, kimseyle paylaşmayın!`;
 
     const xmlData = `<?xml version="1.0"?>

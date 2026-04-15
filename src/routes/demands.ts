@@ -334,7 +334,12 @@ router.post(
   authenticate,
   authorizeReceiver,
   [
-    body("title").isString().isLength({ min: 3, max: 200 }),
+    body("title")
+      .trim()
+      .isString()
+      .withMessage("Başlık metin olmalıdır")
+      .isLength({ min: 2, max: 200 })
+      .withMessage("Başlık en az 2, en fazla 200 karakter olmalıdır"),
     body("category").isString().withMessage("Kategori zorunludur"), // Can be category ID or name
     body("location")
       .optional()
@@ -458,13 +463,17 @@ router.post(
         const errorMessages = errors
           .array()
           .map((err) => {
-            const field = "param" in err ? err.param : "field";
+            const field =
+              "path" in err
+                ? err.path
+                : "param" in err
+                  ? err.param
+                  : "field";
             const value = "value" in err ? err.value : "N/A";
-            return `${field} (${typeof value}): ${err.msg
-              } - Received: ${JSON.stringify(value)}`;
+            return `${field}: ${err.msg} (gelen: ${JSON.stringify(value)})`;
           })
           .join(", ");
-        throw new AppError(`Validation error: ${errorMessages}`, 400);
+        throw new AppError(`Talep doğrulama hatası: ${errorMessages}`, 400);
       }
 
       const {

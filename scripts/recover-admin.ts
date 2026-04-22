@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = "gustoapp";
+const ADMIN_EMAIL = "gusto@app.net";
 const ADMIN_PASSWORD = "GustoApp2341!";
 const ADMIN_NAME = "Gusto Admin";
 const ADMIN_PHONE = "+905550000001";

@@ -21,6 +21,7 @@ interface DepositInitiateBody {
   expiryYear?: string;
   cvc?: string;
   phone?: string;
+  returnBaseUrl?: string;
 }
 
 function parseAmount(value: unknown): number {
@@ -57,6 +58,29 @@ function getWebUrl(): string {
   return process.env.WEB_URL || process.env.FRONTEND_URL || 'http://localhost:3001';
 }
 
+function getDefaultWalletReturnBaseUrl(): string {
+  return `${getWebUrl().replace(/\/$/, '')}/provider/wallet`;
+}
+
+function normalizeReturnBaseUrl(value?: string): string {
+  const fallback = getDefaultWalletReturnBaseUrl();
+  const trimmed = String(value || '').trim();
+
+  if (!trimmed) {
+    return fallback;
+  }
+
+  const withoutTrailingSlash = trimmed.replace(/\/$/, '');
+  const isHttpUrl = /^https?:\/\/[^/]+/i.test(withoutTrailingSlash);
+  const isCustomSchemeUrl = /^[a-z][a-z0-9+\-.]*:\/\/[^/]+/i.test(withoutTrailingSlash);
+
+  if (!isHttpUrl && !isCustomSchemeUrl) {
+    return fallback;
+  }
+
+  return withoutTrailingSlash;
+}
+
 function getClientIp(req: AuthRequest): string {
   const forwardedFor = req.headers['x-forwarded-for'];
   const forwardedIp = Array.isArray(forwardedFor)
@@ -66,15 +90,25 @@ function getClientIp(req: AuthRequest): string {
   return rawIp.replace('::ffff:', '').replace('::1', '127.0.0.1');
 }
 
-function buildWalletRedirectUrl(status: 'success' | 'error', orderId?: string, message?: string): string {
-  const redirectUrl = new URL(`/provider/wallet/${status}`, getWebUrl());
+function buildWalletRedirectUrl(
+  returnBaseUrl: string | undefined,
+  status: 'success' | 'error',
+  orderId?: string,
+  message?: string
+): string {
+  const normalizedBaseUrl = normalizeReturnBaseUrl(returnBaseUrl);
+  const separator = normalizedBaseUrl.includes('?') ? '&' : '?';
+  const query = new URLSearchParams();
+
   if (orderId) {
-    redirectUrl.searchParams.set('orderId', orderId);
+    query.set('orderId', orderId);
   }
   if (message) {
-    redirectUrl.searchParams.set('message', message);
+    query.set('message', message);
   }
-  return redirectUrl.toString();
+
+  const queryString = query.toString();
+  return `${normalizedBaseUrl}/${status}${queryString ? `${separator}${queryString}` : ''}`;
 }
 
 function resolveTopUpStatus(success: boolean): TransactionStatus {
@@ -163,6 +197,9 @@ router.get('/balance', authenticate, async (req: AuthRequest, res, next) => {
     res.json({
       success: true,
       balance: user?.balance || 0,
+      data: {
+        balance: user?.balance || 0,
+      },
     });
   } catch (error) {
     next(error);
@@ -180,6 +217,7 @@ router.post('/deposit/initiate', authenticate, async (req: AuthRequest, res, nex
       expiryYear,
       cvc,
       phone,
+      returnBaseUrl,
     } = req.body as DepositInitiateBody;
 
     const amount = parseAmount(rawAmount);
@@ -215,8 +253,11 @@ router.post('/deposit/initiate', authenticate, async (req: AuthRequest, res, nex
     }
 
     const orderId = `WLT-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const successUrl = `${getBaseUrl(req)}/api/transactions/deposit/callback`;
-    const errorUrl = `${getBaseUrl(req)}/api/transactions/deposit/callback`;
+    const normalizedReturnBaseUrl = normalizeReturnBaseUrl(returnBaseUrl);
+    const callbackUrl = new URL('/api/transactions/deposit/callback', getBaseUrl(req));
+    callbackUrl.searchParams.set('returnBaseUrl', normalizedReturnBaseUrl);
+    const successUrl = callbackUrl.toString();
+    const errorUrl = callbackUrl.toString();
     const walletDescription = description?.trim() || 'Param POS ile bakiye yükleme';
 
     const pendingTransaction = await prisma.transaction.create({
@@ -238,7 +279,7 @@ router.post('/deposit/initiate', authenticate, async (req: AuthRequest, res, nex
         successUrl,
         errorUrl,
         clientIp: getClientIp(req),
-        refUrl: `${getWebUrl()}/provider/wallet`,
+        refUrl: getDefaultWalletReturnBaseUrl(),
         data1: 'wallet_topup',
         data2: user.id,
         data3: user.name || '',
@@ -329,6 +370,8 @@ async function handleCallback(req: AuthRequest, res: Response, next: (error?: un
   try {
     const payload = ((req.method === 'GET' ? req.query : req.body) || {}) as ParamCallbackPayload;
     const orderId = String(payload.TURKPOS_RETVAL_Siparis_ID || '');
+    const returnBaseUrl =
+      typeof req.query?.returnBaseUrl === 'string' ? req.query.returnBaseUrl : undefined;
 
     if (!orderId) {
       throw new AppError('Param callback sipariş bilgisi içermiyor.', 400);
@@ -342,6 +385,7 @@ async function handleCallback(req: AuthRequest, res: Response, next: (error?: un
 
     const finalizedTopUp = await finalizeTopUp(transaction, payload);
     const redirectUrl = buildWalletRedirectUrl(
+      returnBaseUrl,
       finalizedTopUp.status === TransactionStatus.COMPLETED ? 'success' : 'error',
       finalizedTopUp.orderId,
       finalizedTopUp.message
@@ -354,7 +398,9 @@ async function handleCallback(req: AuthRequest, res: Response, next: (error?: un
       const orderId = typeof callbackSource?.TURKPOS_RETVAL_Siparis_ID === 'string'
         ? callbackSource.TURKPOS_RETVAL_Siparis_ID
         : undefined;
-      res.redirect(302, buildWalletRedirectUrl('error', orderId, error.message));
+      const returnBaseUrl =
+        typeof req.query?.returnBaseUrl === 'string' ? req.query.returnBaseUrl : undefined;
+      res.redirect(302, buildWalletRedirectUrl(returnBaseUrl, 'error', orderId, error.message));
       return;
     }
 

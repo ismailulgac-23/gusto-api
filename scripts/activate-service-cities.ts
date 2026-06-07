@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const ACTIVE_CITY_NAMES = [
+  "İzmir",
   "Aydın",
   "Uşak",
   "Kütahya",

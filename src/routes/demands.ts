@@ -7,6 +7,7 @@ import {
   AuthRequest,
 } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
+import { TEST_OTP_PHONES } from "../services/sms.service";
 
 const router = Router();
 
@@ -569,6 +570,17 @@ router.post(
         }
       }
 
+      // Test hesaplarının (sabit OTP) talepleri otomatik onaylansın ki
+      // hizmet veren test hesabı anında görebilsin. Gerçek kullanıcılar için
+      // admin onayı (isApproved=false) davranışı korunur.
+      const creator = await prisma.user.findUnique({
+        where: { id: req.userId! },
+        select: { phoneNumber: true },
+      });
+      const autoApprove = TEST_OTP_PHONES.some((p) =>
+        (creator?.phoneNumber || "").includes(p)
+      );
+
       // Generate demand number using transaction to prevent race conditions
       const demand = await prisma.$transaction(async (tx) => {
         // Find the highest demandNumber and increment by 1, or start from 1000000
@@ -605,7 +617,7 @@ router.post(
             questionResponses: questionResponses || null,
             countie: countie || null,
             demandNumber: nextDemandNumber,
-            isApproved: false, // Admin onayı bekliyor
+            isApproved: autoApprove, // Test hesapları otomatik onaylı; gerçek kullanıcılar admin onayı bekler
             cities: {
               create: processedCityIds.map((cityId: string) => ({
                 cityId,

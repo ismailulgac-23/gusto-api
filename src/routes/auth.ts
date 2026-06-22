@@ -4,16 +4,25 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTP, verifyOTP } from '../services/sms.service';
+import { sendOTP, verifyOTP, TEST_OTP_PHONES } from '../services/sms.service';
 import { AuthRequest } from '../middleware/auth';
 import { validateRequest } from '../middleware/validator';
 
 const router = Router();
 
+// Telefon doğrulayıcı: test numaralarına (sabit OTP hesapları) izin verir,
+// aksi halde standart mobil numara formatını uygular.
+const phoneValidator = body('phoneNumber').custom((value) => {
+  const clean = String(value).replace(/^\+?90/, '').replace(/^0/, '');
+  if (TEST_OTP_PHONES.includes(clean)) return true;
+  if (/^\+?\d{10,15}$/.test(String(value))) return true;
+  throw new Error('Geçersiz telefon numarası');
+});
+
 // Send OTP - Netgsm SMS entegrasyonu ile
 router.post(
   '/send-otp',
-  [body('phoneNumber').isMobilePhone('any').withMessage('Geçersiz telefon numarası')],
+  [phoneValidator],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -40,7 +49,7 @@ router.post(
 router.post(
   '/verify-otp',
   [
-    body('phoneNumber').isMobilePhone('any').withMessage('Geçersiz telefon numarası'),
+    phoneValidator,
     body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP kodu 6 haneli olmalıdır'),
     body('userType').isIn(['PROVIDER', 'RECEIVER']).optional(),
     body('name').optional().isString(),

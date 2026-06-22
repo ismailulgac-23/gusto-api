@@ -10,6 +10,11 @@ const NETGSM_CONFIG = {
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
+// Sabit OTP (123456) ile giriş yapan test numaraları — App Store inceleme ve
+// QA hesapları içindir. Bu numaralar gerçek SMS göndermez.
+export const TEST_OTP_PHONES = ['5318706998', '5555555555', '6666666666'];
+export const TEST_OTP_CODE = '123456';
+
 // Rastgele 6 haneli OTP kodu üret
 export const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -34,7 +39,8 @@ export const sendOTP = async (
   try {
     const cleanPhone = phoneNumber.replace(/^\+?90/, '').replace(/^0/, '');
 
-    const otpCode = cleanPhone == '5318706998' ? "123456" : generateOTP();
+    const isTestPhone = TEST_OTP_PHONES.includes(cleanPhone);
+    const otpCode = isTestPhone ? TEST_OTP_CODE : generateOTP();
 
     // OTP'yi 5 dakika süreyle sakla
     otpStore.set(cleanPhone, {
@@ -42,7 +48,7 @@ export const sendOTP = async (
       expiresAt: Date.now() + 5 * 60 * 1000,
     });
 
-    if (cleanPhone == '5318706998') {
+    if (isTestPhone) {
       return {
         success: true,
       };
@@ -127,6 +133,12 @@ export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
   try {
     // Telefon numarasını temizle
     const cleanPhone = phoneNumber.replace(/^\+?90/, '').replace(/^0/, '');
+
+    // Test numaraları sabit OTP (123456) ile her zaman doğrulanır
+    if (TEST_OTP_PHONES.includes(cleanPhone) && otp === TEST_OTP_CODE) {
+      console.log(`[SMS] Test OTP verified for ${cleanPhone}`);
+      return true;
+    }
 
     const stored = otpStore.get(cleanPhone);
 

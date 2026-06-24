@@ -7,9 +7,11 @@ const prisma = new PrismaClient();
 // Aynı şehir/ilçe ve eşleşen kategorilerle oluşturulur; böylece RECEIVER bir
 // talep açtığında PROVIDER bunu görüp teklif verebilir.
 
-const RECEIVER_PHONE = '+5555555555';
-const PROVIDER_PHONE = '+6666666666';
-const TEST_DISTRICT = 'Kadıköy';
+// Uygulama telefonu +90 ön ekiyle gönderir (ör. 5555555555 -> +905555555555).
+// Kullanıcı kayıtları bu formatla eşleşmeli ki app'ten giriş kullanıcıyı bulabilsin.
+const RECEIVER_PHONE = '+905555555555';
+const PROVIDER_PHONE = '+906666666666';
+const TEST_DISTRICT = 'Merkez';
 
 async function pickCity() {
   // Aktif bir şehir tercih et; yoksa ilkini aktif et.

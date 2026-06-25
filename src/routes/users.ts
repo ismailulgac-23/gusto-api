@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { TEST_OTP_PHONES } from '../services/sms.service';
 
 const router = Router();
 
@@ -191,6 +192,40 @@ router.put(
     }
   }
 );
+
+// Hesabı kalıcı olarak sil (App Store 5.1.1(v) gereği)
+// İlişkili tüm kayıtlar (talep, teklif, işlem, bildirim, kategori, banka hesabı,
+// inceleme vb.) şemadaki onDelete: Cascade kuralları ile otomatik silinir.
+router.delete('/me', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { id: true, phoneNumber: true },
+    });
+
+    if (!user) {
+      throw new AppError('Kullanıcı bulunamadı', 404);
+    }
+
+    // App Store inceleme demo hesapları korunur: gerçek kayıt silinmez,
+    // böylece sonraki incelemelerde giriş yapılabilir. Akış (onay -> çıkış)
+    // kullanıcı tarafında aynen çalışır.
+    const isTestAccount = TEST_OTP_PHONES.some((p) =>
+      (user.phoneNumber || '').includes(p)
+    );
+
+    if (!isTestAccount) {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+
+    res.json({
+      success: true,
+      message: 'Hesabınız kalıcı olarak silindi.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Get user by ID
 router.get('/:id', async (req, res, next) => {

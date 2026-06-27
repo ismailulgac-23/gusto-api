@@ -19,6 +19,16 @@ const phoneValidator = body('phoneNumber').custom((value) => {
   throw new Error('Geçersiz telefon numarası');
 });
 
+// App Store inceleme demo hesapları
+const REVIEW_ACCOUNTS = ['5555555555', '6666666666'];
+
+// Review modu durumu (public): App Store demo giriş butonlarını sunucudan
+// kontrol etmek için. Açık olması = demo hesapları sabit OTP ile aktif.
+router.get('/review-mode', (_req: AuthRequest, res: Response) => {
+  const enabled = REVIEW_ACCOUNTS.every((p) => TEST_OTP_PHONES.includes(p));
+  res.json({ success: true, data: { enabled } });
+});
+
 // Send OTP - Netgsm SMS entegrasyonu ile
 router.post(
   '/send-otp',

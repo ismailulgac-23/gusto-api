@@ -7,6 +7,8 @@ import {
   getParamGuid,
   initiateParam3DPayment,
   ParamCallbackPayload,
+  ParamQueryResult,
+  queryParamTransaction,
   verifyParamCallbackHash,
 } from '../services/param.service';
 
@@ -169,6 +171,42 @@ async function finalizeTopUp(transaction: Transaction, payload: ParamCallbackPay
     message: resultMessage,
     orderId: transaction.referenceId || undefined,
   };
+}
+
+// Param'a doğrudan sorgu sonucuyla (callback gelmese bile) işlemi tamamla.
+// Sadece kesin başarıda COMPLETED + bakiye credit eder; idempotent ve yarış-güvenli.
+async function finalizeTopUpFromQuery(
+  transaction: Transaction,
+  query: ParamQueryResult
+): Promise<boolean> {
+  if (transaction.status === TransactionStatus.COMPLETED) {
+    return true;
+  }
+  if (!query.success) {
+    return false;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const fresh = await tx.transaction.findUnique({ where: { id: transaction.id } });
+    if (!fresh || fresh.status === TransactionStatus.COMPLETED) {
+      return true;
+    }
+
+    await tx.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: TransactionStatus.COMPLETED,
+        description: `Param POS ile bakiye yükleme (${transaction.amount.toFixed(2)} TL)`,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: transaction.userId },
+      data: { balance: { increment: transaction.amount } },
+    });
+
+    return true;
+  });
 }
 
 router.get('/my', authenticate, async (req: AuthRequest, res, next) => {
@@ -336,10 +374,23 @@ router.post('/deposit/initiate', authenticate, async (req: AuthRequest, res, nex
 
 router.get('/deposit/status/:orderId', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const transaction = await getDepositTransaction(req.params.orderId);
+    let transaction = await getDepositTransaction(req.params.orderId);
 
     if (!transaction || transaction.userId !== req.userId) {
       throw new AppError('Ödeme kaydı bulunamadı.', 404);
+    }
+
+    // Callback gelmemiş olabilir: PENDING ise Param'a doğrudan sorup teyit et.
+    if (transaction.status === TransactionStatus.PENDING && transaction.referenceId) {
+      try {
+        const query = await queryParamTransaction(transaction.referenceId);
+        if (query.success) {
+          await finalizeTopUpFromQuery(transaction, query);
+          transaction = (await getDepositTransaction(req.params.orderId)) || transaction;
+        }
+      } catch (queryError) {
+        console.error('[Param] İşlem sorgulama hatası:', queryError);
+      }
     }
 
     const message =

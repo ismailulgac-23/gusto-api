@@ -289,6 +289,85 @@ export async function initiateParam3DPayment(payload: ParamPaymentRequest): Prom
   };
 }
 
+export interface ParamQueryResult {
+  found: boolean; // Param'da bu sipariş için kayıt var mı
+  success: boolean; // ödeme başarıyla tamamlanmış mı
+  amount?: number;
+  receiptId?: string; // Dekont_ID
+  status?: string; // Durum
+  resultMessage: string;
+  rawResponse: string;
+}
+
+function buildIslemSorgulamaEnvelope(orderId: string): string {
+  const { clientCode, clientUsername, clientPassword, guid } = getConfig();
+  return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+               xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TP_Islem_Sorgulama4 xmlns="${PARAM_NAMESPACE}">
+      <G>
+        <CLIENT_CODE>${xmlEscape(clientCode)}</CLIENT_CODE>
+        <CLIENT_USERNAME>${xmlEscape(clientUsername)}</CLIENT_USERNAME>
+        <CLIENT_PASSWORD>${xmlEscape(clientPassword)}</CLIENT_PASSWORD>
+      </G>
+      <GUID>${xmlEscape(guid)}</GUID>
+      <Dekont_ID></Dekont_ID>
+      <Siparis_ID>${xmlEscape(orderId)}</Siparis_ID>
+      <Islem_ID></Islem_ID>
+    </TP_Islem_Sorgulama4>
+  </soap:Body>
+</soap:Envelope>`;
+}
+
+// Param'a doğrudan sipariş durumunu sorar (callback gelmese bile kullanılır).
+export async function queryParamTransaction(orderId: string): Promise<ParamQueryResult> {
+  const envelope = buildIslemSorgulamaEnvelope(orderId);
+  const { serviceUrl } = getConfig();
+
+  const response = await fetch(serviceUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/xml; charset=utf-8',
+      SOAPAction: `${PARAM_NAMESPACE}TP_Islem_Sorgulama4`,
+    },
+    body: envelope,
+  });
+
+  const rawResponse = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`Param işlem sorgulama isteği başarısız oldu (${response.status}).`);
+  }
+
+  const querySonuc = Number(extractTag(rawResponse, 'Sonuc') || '0');
+  const odemeSonuc = Number(extractTag(rawResponse, 'Odeme_Sonuc') || '0');
+  const durum = decodeXmlEntities(extractTag(rawResponse, 'Durum')) || '';
+  const dekontId = (decodeXmlEntities(extractTag(rawResponse, 'Dekont_ID')) || '').trim();
+  const tutarStr = extractTag(rawResponse, 'Toplam_Tutar');
+  const amount = tutarStr ? Number(String(tutarStr).replace(/\./g, '').replace(',', '.')) : undefined;
+  const resultMessage =
+    decodeXmlEntities(extractTag(rawResponse, 'Odeme_Sonuc_Aciklama')) ||
+    decodeXmlEntities(extractTag(rawResponse, 'Sonuc_Str')) ||
+    '';
+
+  const found = querySonuc > 0 && !!dekontId && dekontId !== '0';
+  const durumOk = /BA[SŞ]ARILI|SUCCESS|TAMAM|ONAYLANDI/i.test(durum);
+  // Ödeme başarısı: sorgu kaydı bulundu + ödeme sonucu pozitif (veya durum başarılı)
+  const success = found && (odemeSonuc >= 1 || durumOk);
+
+  return {
+    found,
+    success,
+    amount: Number.isFinite(amount as number) ? amount : undefined,
+    receiptId: dekontId || undefined,
+    status: durum,
+    resultMessage,
+    rawResponse,
+  };
+}
+
 export function verifyParamCallbackHash(payload: ParamCallbackPayload): boolean {
   const { clientCode, guid } = getConfig();
   const receiptId = payload.TURKPOS_RETVAL_Dekont_ID || '0';

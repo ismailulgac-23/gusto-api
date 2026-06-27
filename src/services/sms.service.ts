@@ -10,9 +10,10 @@ const NETGSM_CONFIG = {
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
-// Sabit OTP (123456) ile giriş yapan test numaraları — App Store inceleme ve
-// QA hesapları içindir. Bu numaralar gerçek SMS göndermez.
-export const TEST_OTP_PHONES = ['5318706998', '5555555555', '6666666666'];
+// Sabit OTP (123456) ile giriş yapan test numaraları.
+// NOT: App Store inceleme hesapları (5555555555 / 6666666666) review modu
+// kapatıldığı için kaldırıldı. Yeniden açmak gerekirse listeye geri ekleyin.
+export const TEST_OTP_PHONES = ['5318706998'];
 export const TEST_OTP_CODE = '123456';
 
 // Rastgele 6 haneli OTP kodu üret

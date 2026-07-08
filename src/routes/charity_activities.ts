@@ -3,8 +3,61 @@ import { body, validationResult, query } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, authorizeProvider, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { sendNotificationToMultipleUsers } from '../services/fcm.service';
 
 const router = Router();
+
+// Yeni hayır aktivitesi açıldığında şehirdeki kullanıcılara bildirim gönder.
+// Fire-and-forget: hata olursa aktivite oluşturmayı etkilemez.
+async function notifyCityAboutCharity(activity: {
+  id: string;
+  title: string;
+  address: string;
+  providerId: string;
+}) {
+  try {
+    const provider = await prisma.user.findUnique({
+      where: { id: activity.providerId },
+      select: { cityId: true, companyName: true, name: true },
+    });
+    if (!provider?.cityId) return;
+
+    const users = await prisma.user.findMany({
+      where: {
+        cityId: provider.cityId,
+        isActive: true,
+        id: { not: activity.providerId },
+      },
+      select: { id: true, fcmToken: true },
+      take: 2000,
+    });
+    if (users.length === 0) return;
+
+    const title = 'Yakınında Hayır Dağıtımı! 📍';
+    const message = `${activity.title} — ${activity.address}`;
+
+    await prisma.notification.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
+        title,
+        message,
+        type: 'CHARITY',
+        data: { charityActivityId: activity.id },
+      })),
+    });
+
+    const tokens = users.map((u) => u.fcmToken).filter(Boolean) as string[];
+    if (tokens.length > 0) {
+      // Firebase yapılandırılmamışsa servis kendi içinde no-op/hata döner.
+      await sendNotificationToMultipleUsers(tokens, title, message, {
+        type: 'CHARITY',
+        charityActivityId: activity.id,
+      });
+    }
+  } catch (error) {
+    console.error('[Charity] Bildirim gönderilemedi:', error);
+  }
+}
 
 // Haversine formülü ile mesafe hesaplama (km cinsinden)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -184,6 +237,14 @@ router.post(
         },
       });
 
+      // Şehirdeki kullanıcılara bildirim (async, yanıtı bekletmez)
+      void notifyCityAboutCharity({
+        id: activity.id,
+        title: activity.title,
+        address: activity.address,
+        providerId: req.userId!,
+      });
+
       res.json({
         success: true,
         message: 'Hayır aktivitesi başarıyla oluşturuldu',
@@ -194,6 +255,44 @@ router.post(
     }
   }
 );
+
+// CANLI hayır dağıtım noktaları — PUBLIC (web ana sayfa haritası için, auth yok).
+// Aktif sayılma kuralı: bitiş zamanı gelmemiş VEYA (bitiş zamanı yoksa) son 12 saatte açılmış.
+router.get('/live', async (_req, res: Response, next: NextFunction) => {
+  try {
+    const now = new Date();
+    const freshSince = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+
+    const activities = await prisma.charityActivity.findMany({
+      where: {
+        OR: [
+          { estimatedEndTime: { gte: now } },
+          { estimatedEndTime: null, createdAt: { gte: freshSince } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        latitude: true,
+        longitude: true,
+        address: true,
+        estimatedEndTime: true,
+        createdAt: true,
+        provider: {
+          select: { name: true, companyName: true, city: { select: { name: true } } },
+        },
+        category: { select: { name: true, icon: true } },
+      },
+    });
+
+    res.json({ success: true, data: activities });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Hayır aktivitesi detayı
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {

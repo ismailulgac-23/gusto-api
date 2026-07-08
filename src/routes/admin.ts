@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { validateRequest } from '../middleware/validator';
+import { sendNotificationToUser } from '../services/fcm.service';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -856,6 +857,15 @@ router.patch(
           },
         });
 
+        if (demand.user?.fcmToken) {
+          void sendNotificationToUser(
+            demand.user.fcmToken,
+            'Talep Reddedildi',
+            `"${demand.title}" başlıklı talebiniz reddedildi.`,
+            { type: 'DEMAND_REJECTED', demandId: demand.id }
+          );
+        }
+
         // Talep sil
         await prisma.demand.delete({
           where: { id: req.params.id },
@@ -904,6 +914,15 @@ router.patch(
           },
         },
       });
+
+      if (demand.user?.fcmToken) {
+        void sendNotificationToUser(
+          demand.user.fcmToken,
+          'Talep Onaylandı ✅',
+          `"${demand.title}" başlıklı talebiniz onaylandı ve artık görülebilir.`,
+          { type: 'DEMAND_APPROVED', demandId: demand.id }
+        );
+      }
 
       res.json({
         success: true,

@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { getReviewMode, setReviewMode, refreshReviewModeCache } from '../services/settings.service';
 
 const router = Router();
 
@@ -54,6 +55,48 @@ const requireAdmin = async (req: AuthRequest, _res: Response, next: NextFunction
     next(error);
   }
 };
+
+// ==================== REVIEW / DEMO MODE ====================
+
+// Review/DEMO modu durumu (Admin)
+router.get(
+  '/admin/review-mode',
+  authenticate,
+  requireAdmin,
+  async (_req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const enabled = await refreshReviewModeCache();
+      res.json({ success: true, data: { isEnabled: enabled } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Review/DEMO modunu aç/kapat (Admin)
+router.put(
+  '/admin/review-mode',
+  authenticate,
+  requireAdmin,
+  [body('isEnabled').isBoolean().withMessage('isEnabled boolean olmalıdır')],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+      const enabled = req.body.isEnabled === true;
+      await setReviewMode(enabled);
+      res.json({
+        success: true,
+        message: enabled ? 'Review/DEMO modu açıldı.' : 'Review/DEMO modu kapatıldı.',
+        data: { isEnabled: getReviewMode() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // Get all cities (Admin)
 router.get(

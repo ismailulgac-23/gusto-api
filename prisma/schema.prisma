@@ -390,3 +390,12 @@ model PaymentNotification {
   @@index([status])
   @@map("payment_notifications")
 }
+
+// Basit key/value ayar deposu (ör. review_mode = "on"/"off")
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

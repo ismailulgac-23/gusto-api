@@ -3,7 +3,7 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
-import { TEST_OTP_PHONES } from '../services/sms.service';
+import { isProtectedTestPhone } from '../services/sms.service';
 
 const router = Router();
 
@@ -210,9 +210,7 @@ router.delete('/me', authenticate, async (req: AuthRequest, res, next) => {
     // App Store inceleme demo hesapları korunur: gerçek kayıt silinmez,
     // böylece sonraki incelemelerde giriş yapılabilir. Akış (onay -> çıkış)
     // kullanıcı tarafında aynen çalışır.
-    const isTestAccount = TEST_OTP_PHONES.some((p) =>
-      (user.phoneNumber || '').includes(p)
-    );
+    const isTestAccount = isProtectedTestPhone(user.phoneNumber || '');
 
     if (!isTestAccount) {
       await prisma.user.delete({ where: { id: user.id } });

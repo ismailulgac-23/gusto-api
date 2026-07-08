@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
-import { sendOTP, verifyOTP, TEST_OTP_PHONES } from '../services/sms.service';
+import { sendOTP, verifyOTP, isProtectedTestPhone } from '../services/sms.service';
+import { getReviewMode } from '../services/settings.service';
 import { AuthRequest } from '../middleware/auth';
 import { validateRequest } from '../middleware/validator';
 
@@ -13,20 +14,15 @@ const router = Router();
 // Telefon doğrulayıcı: test numaralarına (sabit OTP hesapları) izin verir,
 // aksi halde standart mobil numara formatını uygular.
 const phoneValidator = body('phoneNumber').custom((value) => {
-  const clean = String(value).replace(/^\+?90/, '').replace(/^0/, '');
-  if (TEST_OTP_PHONES.includes(clean)) return true;
+  if (isProtectedTestPhone(String(value))) return true;
   if (/^\+?\d{10,15}$/.test(String(value))) return true;
   throw new Error('Geçersiz telefon numarası');
 });
 
-// App Store inceleme demo hesapları
-const REVIEW_ACCOUNTS = ['5555555555', '6666666666'];
-
 // Review modu durumu (public): App Store demo giriş butonlarını sunucudan
-// kontrol etmek için. Açık olması = demo hesapları sabit OTP ile aktif.
+// kontrol etmek için. Admin panel "Review/DEMO Modu" toggle'ı ile yönetilir.
 router.get('/review-mode', (_req: AuthRequest, res: Response) => {
-  const enabled = REVIEW_ACCOUNTS.every((p) => TEST_OTP_PHONES.includes(p));
-  res.json({ success: true, data: { enabled } });
+  res.json({ success: true, data: { enabled: getReviewMode() } });
 });
 
 // Send OTP - Netgsm SMS entegrasyonu ile

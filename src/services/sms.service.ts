@@ -1,5 +1,6 @@
 import https from 'https';
 import { exit } from 'process';
+import { getReviewMode } from './settings.service';
 
 const NETGSM_CONFIG = {
   username: '8503031871',
@@ -10,11 +11,30 @@ const NETGSM_CONFIG = {
 // OTP kodlarını geçici olarak saklamak için (Production'da Redis kullanılmalı)
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
-// Sabit OTP (123456) ile giriş yapan test numaraları.
-// NOT: App Store inceleme hesapları (5555555555 / 6666666666) review modu
-// kapatıldığı için kaldırıldı. Yeniden açmak gerekirse listeye geri ekleyin.
-export const TEST_OTP_PHONES = ['5318706998'];
 export const TEST_OTP_CODE = '123456';
+
+// Her zaman aktif geliştirme/QA numarası (admin toggle'ından bağımsız).
+const ALWAYS_ON_PHONES = ['5318706998'];
+// App Store inceleme hesapları — yalnızca admin panel "Review/DEMO Modu" AÇIK iken aktif.
+const REVIEW_ACCOUNTS = ['5555555555', '6666666666'];
+
+export function cleanPhoneNumber(phone: string): string {
+  return String(phone || '').replace(/^\+?90/, '').replace(/^0/, '');
+}
+
+// Sabit-OTP girişinin bu an için aktif olup olmadığı (review toggle'ına bağlı).
+export function isReviewActivePhone(rawOrClean: string): boolean {
+  const clean = cleanPhoneNumber(rawOrClean);
+  if (ALWAYS_ON_PHONES.includes(clean)) return true;
+  if (REVIEW_ACCOUNTS.includes(clean) && getReviewMode()) return true;
+  return false;
+}
+
+// Bu numaralar demo/QA hesabı olduğundan kalıcı silinmez (toggle'dan bağımsız korunur).
+export function isProtectedTestPhone(rawOrClean: string): boolean {
+  const clean = cleanPhoneNumber(rawOrClean);
+  return ALWAYS_ON_PHONES.includes(clean) || REVIEW_ACCOUNTS.includes(clean);
+}
 
 // Rastgele 6 haneli OTP kodu üret
 export const generateOTP = (): string => {
@@ -40,7 +60,7 @@ export const sendOTP = async (
   try {
     const cleanPhone = phoneNumber.replace(/^\+?90/, '').replace(/^0/, '');
 
-    const isTestPhone = TEST_OTP_PHONES.includes(cleanPhone);
+    const isTestPhone = isReviewActivePhone(cleanPhone);
     const otpCode = isTestPhone ? TEST_OTP_CODE : generateOTP();
 
     // OTP'yi 5 dakika süreyle sakla
@@ -135,8 +155,8 @@ export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
     // Telefon numarasını temizle
     const cleanPhone = phoneNumber.replace(/^\+?90/, '').replace(/^0/, '');
 
-    // Test numaraları sabit OTP (123456) ile her zaman doğrulanır
-    if (TEST_OTP_PHONES.includes(cleanPhone) && otp === TEST_OTP_CODE) {
+    // Test/review numaraları sabit OTP (123456) ile doğrulanır (review aktifse)
+    if (isReviewActivePhone(cleanPhone) && otp === TEST_OTP_CODE) {
       console.log(`[SMS] Test OTP verified for ${cleanPhone}`);
       return true;
     }

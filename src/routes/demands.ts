@@ -7,7 +7,8 @@ import {
   AuthRequest,
 } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
-import { TEST_OTP_PHONES } from "../services/sms.service";
+import { isReviewActivePhone } from "../services/sms.service";
+import { sendNotificationToMultipleUsers } from "../services/fcm.service";
 
 const router = Router();
 
@@ -577,9 +578,7 @@ router.post(
         where: { id: req.userId! },
         select: { phoneNumber: true },
       });
-      const autoApprove = TEST_OTP_PHONES.some((p) =>
-        (creator?.phoneNumber || "").includes(p)
-      );
+      const autoApprove = isReviewActivePhone(creator?.phoneNumber || "");
 
       // Generate demand number using transaction to prevent race conditions
       const demand = await prisma.$transaction(async (tx) => {
@@ -644,6 +643,9 @@ router.post(
         });
       });
 
+      // Eşleşen sağlayıcılara bildirim (async, yanıtı bekletmez)
+      void notifyProvidersAboutDemand(demand.id);
+
       res.status(201).json({
         success: true,
         message: "Talep başarıyla oluşturuldu",
@@ -654,6 +656,80 @@ router.post(
     }
   }
 );
+
+// Yeni talep açıldığında, o kategoriye (üst kategoriler dahil) ve talebin
+// şehirlerine hizmet veren PROVIDER'lara push + DB bildirimi gönderir.
+async function notifyProvidersAboutDemand(demandId: string) {
+  try {
+    const demand = await prisma.demand.findUnique({
+      where: { id: demandId },
+      select: {
+        id: true,
+        title: true,
+        userId: true,
+        categoryId: true,
+        cities: { select: { cityId: true } },
+        category: { select: { name: true } },
+      },
+    });
+    if (!demand?.categoryId) return;
+
+    // Kategori + üst kategoriler (ancestor zinciri)
+    const categoryIds: string[] = [];
+    let currentId: string | null = demand.categoryId;
+    let guard = 0;
+    while (currentId && guard < 20) {
+      categoryIds.push(currentId);
+      const cat: { parentId: string | null } | null =
+        await prisma.category.findUnique({
+          where: { id: currentId },
+          select: { parentId: true },
+        });
+      currentId = cat?.parentId || null;
+      guard++;
+    }
+
+    const cityIds = demand.cities.map((c) => c.cityId);
+
+    const providers = await prisma.user.findMany({
+      where: {
+        userType: "PROVIDER",
+        isActive: true,
+        id: { not: demand.userId },
+        categories: { some: { categoryId: { in: categoryIds } } },
+        ...(cityIds.length > 0 ? { cityId: { in: cityIds } } : {}),
+      },
+      select: { id: true, fcmToken: true },
+      take: 2000,
+    });
+    if (providers.length === 0) return;
+
+    const title = "Yeni Talep 📋";
+    const message = `${demand.category?.name ? demand.category.name + " — " : ""}${demand.title}`;
+
+    await prisma.notification.createMany({
+      data: providers.map((p) => ({
+        userId: p.id,
+        title,
+        message,
+        type: "NEW_DEMAND",
+        data: { demandId: demand.id } as any,
+      })),
+    });
+
+    const tokens = providers
+      .map((p) => p.fcmToken)
+      .filter((t): t is string => !!t);
+    if (tokens.length > 0) {
+      await sendNotificationToMultipleUsers(tokens, title, message, {
+        type: "NEW_DEMAND",
+        demandId: demand.id,
+      });
+    }
+  } catch (error) {
+    console.error("[Demand] Sağlayıcı bildirimi gönderilemedi:", error);
+  }
+}
 
 // Update demand
 router.put(

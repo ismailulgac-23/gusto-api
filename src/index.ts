@@ -110,6 +110,9 @@ app.post('/upload-cookie', (req, res) => {
 // Initialize Firebase
 initializeFirebase();
 
+// Review/DEMO modu cache'ini ısıt
+import('./services/settings.service').then((m) => m.refreshReviewModeCache());
+
 // 404 handler
 app.use('*', (_req, res) => {
   res.status(404).json({

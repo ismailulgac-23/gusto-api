@@ -1,7 +1,34 @@
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
 
 // Firebase Admin SDK'yı başlat
 let firebaseApp: admin.app.App | null = null;
+
+// Servis hesabı JSON'unu env'den (inline JSON) veya dosya yolundan okur.
+function loadServiceAccount(): admin.ServiceAccount | null {
+  const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+      console.error('❌ FIREBASE_SERVICE_ACCOUNT_PATH okunamadı:', e);
+    }
+  }
+
+  const inline = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (inline) {
+    try {
+      // Dosya yolu da verilmiş olabilir
+      if (inline.trim().startsWith('/') && fs.existsSync(inline.trim())) {
+        return JSON.parse(fs.readFileSync(inline.trim(), 'utf8'));
+      }
+      return JSON.parse(inline);
+    } catch (e) {
+      console.error('❌ FIREBASE_SERVICE_ACCOUNT parse edilemedi:', e);
+    }
+  }
+  return null;
+}
 
 export const initializeFirebase = () => {
   try {
@@ -9,27 +36,19 @@ export const initializeFirebase = () => {
       return firebaseApp;
     }
 
-    // Firebase Admin SDK credentials
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-    
-    if (!serviceAccount) {
-      console.warn('⚠️  FIREBASE_SERVICE_ACCOUNT not found. Push notifications will be disabled.');
+    const serviceAccountJson = loadServiceAccount();
+
+    if (!serviceAccountJson) {
+      console.warn('⚠️  Firebase servis hesabı bulunamadı. Push bildirimleri devre dışı.');
       return null;
     }
 
-    try {
-      const serviceAccountJson = JSON.parse(serviceAccount);
-      
-      firebaseApp = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountJson as admin.ServiceAccount),
-      });
+    firebaseApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccountJson),
+    });
 
-      console.log('✅ Firebase Admin SDK initialized');
-      return firebaseApp;
-    } catch (parseError) {
-      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT:', parseError);
-      return null;
-    }
+    console.log('✅ Firebase Admin SDK initialized');
+    return firebaseApp;
   } catch (error) {
     console.error('❌ Firebase initialization error:', error);
     return null;

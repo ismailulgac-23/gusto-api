@@ -3,8 +3,29 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, authorizeProvider, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
+import { sendNotificationToUser } from '../services/fcm.service';
 
 const router = Router();
+
+// Bir kullanıcıya (fcmToken'ı varsa) push bildirimi gönderir. Fire-and-forget.
+async function pushToUser(
+  userId: string,
+  title: string,
+  message: string,
+  data: Record<string, string>
+) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcmToken: true },
+    });
+    if (user?.fcmToken) {
+      await sendNotificationToUser(user.fcmToken, title, message, data);
+    }
+  } catch (error) {
+    console.error('[Offer] Push gönderilemedi:', error);
+  }
+}
 
 // Create offer
 router.post(
@@ -145,17 +166,23 @@ router.post(
       const offer = result.offer;
 
       // Create notification for demand owner
+      const newOfferMsg = `${offer.provider?.name || 'Bir sağlayıcı'} talebinize teklif verdi`;
       await prisma.notification.create({
         data: {
           userId: demand.userId,
           title: 'Yeni Teklif',
-          message: `${offer.provider?.name || 'Bir sağlayıcı'} talebinize teklif verdi`,
+          message: newOfferMsg,
           type: 'NEW_OFFER',
           data: {
             offerId: offer.id,
             demandId: demand.id,
           },
         },
+      });
+      void pushToUser(demand.userId, 'Yeni Teklif 🎉', newOfferMsg, {
+        type: 'NEW_OFFER',
+        offerId: offer.id,
+        demandId: demand.id,
       });
 
       res.status(201).json({
@@ -358,11 +385,13 @@ router.patch(
       });
 
       // Create notification for provider
+      const offerStatusTitle = status === 'ACCEPTED' ? 'Teklif Kabul Edildi ✅' : 'Teklif Reddedildi';
+      const offerStatusMsg = `Teklifiniz ${status === 'ACCEPTED' ? 'kabul edildi' : 'reddedildi'}`;
       await prisma.notification.create({
         data: {
           userId: offer.providerId,
           title: status === 'ACCEPTED' ? 'Teklif Kabul Edildi' : 'Teklif Reddedildi',
-          message: `Teklifiniz ${status === 'ACCEPTED' ? 'kabul edildi' : 'reddedildi'}`,
+          message: offerStatusMsg,
           type: 'OFFER_STATUS',
           data: {
             offerId: offer.id,
@@ -370,6 +399,12 @@ router.patch(
             status,
           },
         },
+      });
+      void pushToUser(offer.providerId, offerStatusTitle, offerStatusMsg, {
+        type: 'OFFER_STATUS',
+        offerId: offer.id,
+        demandId: offer.demandId,
+        status,
       });
 
       // If offer is accepted, close the demand
@@ -514,11 +549,12 @@ router.patch(
       });
 
       // Create notification for receiver
+      const completedMsg = `${offer.provider?.name || 'Hizmet sağlayıcı'} işi tamamladığını onayladı. Lütfen hizmeti değerlendirin.`;
       await prisma.notification.create({
         data: {
           userId: offer.demand!.userId,
           title: 'Hizmet Tamamlandı',
-          message: `${offer.provider?.name || 'Hizmet sağlayıcı'} işi tamamladığını onayladı. Lütfen hizmeti değerlendirin.`,
+          message: completedMsg,
           type: 'OFFER_COMPLETED',
           data: {
             offerId: offer.id,
@@ -526,6 +562,11 @@ router.patch(
             providerId: offer.providerId,
           },
         },
+      });
+      void pushToUser(offer.demand!.userId, 'Hizmet Tamamlandı ✅', completedMsg, {
+        type: 'OFFER_COMPLETED',
+        offerId: offer.id,
+        demandId: offer.demandId,
       });
 
       // TODO: Send push notification if FCM token exists

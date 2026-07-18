@@ -3,60 +3,20 @@ import { body, validationResult, query } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, authorizeProvider, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
-import { sendNotificationToMultipleUsers } from '../services/fcm.service';
+import { notifyCityAboutCharity } from '../services/charity-notify.service';
 
 const router = Router();
 
-// Yeni hayır aktivitesi açıldığında şehirdeki kullanıcılara bildirim gönder.
-// Fire-and-forget: hata olursa aktivite oluşturmayı etkilemez.
-async function notifyCityAboutCharity(activity: {
-  id: string;
-  title: string;
-  address: string;
-  providerId: string;
-}) {
-  try {
-    const provider = await prisma.user.findUnique({
-      where: { id: activity.providerId },
-      select: { cityId: true, companyName: true, name: true },
-    });
-    if (!provider?.cityId) return;
-
-    const users = await prisma.user.findMany({
-      where: {
-        cityId: provider.cityId,
-        isActive: true,
-        id: { not: activity.providerId },
-      },
-      select: { id: true, fcmToken: true },
-      take: 2000,
-    });
-    if (users.length === 0) return;
-
-    const title = 'Yakınında Hayır Dağıtımı! 📍';
-    const message = `${activity.title} — ${activity.address}`;
-
-    await prisma.notification.createMany({
-      data: users.map((u) => ({
-        userId: u.id,
-        title,
-        message,
-        type: 'CHARITY',
-        data: { charityActivityId: activity.id },
-      })),
-    });
-
-    const tokens = users.map((u) => u.fcmToken).filter(Boolean) as string[];
-    if (tokens.length > 0) {
-      // Firebase yapılandırılmamışsa servis kendi içinde no-op/hata döner.
-      await sendNotificationToMultipleUsers(tokens, title, message, {
-        type: 'CHARITY',
-        charityActivityId: activity.id,
-      });
-    }
-  } catch (error) {
-    console.error('[Charity] Bildirim gönderilemedi:', error);
-  }
+// Aktif (devam eden) hayır aktivitesi koşulu — /live ve /nearby aynı kuralı kullanır:
+// bitiş zamanı gelmemiş VEYA (bitiş zamanı yoksa) son 12 saatte açılmış.
+function activeCharityWhere(now: Date) {
+  const freshSince = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  return {
+    OR: [
+      { estimatedEndTime: { gte: now } },
+      { estimatedEndTime: null, createdAt: { gte: freshSince } },
+    ],
+  };
 }
 
 // Haversine formülü ile mesafe hesaplama (km cinsinden)
@@ -127,8 +87,10 @@ router.get(
       const longitude = parseFloat(req.query.longitude as string);
       const radius = parseFloat(req.query.radius as string) || 5; // Varsayılan 5KM
 
-      // Tüm aktiviteleri çek (daha sonra mesafe filtresi uygulanacak)
+      // Yalnızca DEVAM EDEN aktiviteleri çek (süresi biten harita üzerinde kalmasın),
+      // mesafe filtresi aşağıda uygulanır.
       const activities = await prisma.charityActivity.findMany({
+        where: activeCharityWhere(new Date()),
         include: {
           provider: {
             select: {
@@ -260,16 +222,8 @@ router.post(
 // Aktif sayılma kuralı: bitiş zamanı gelmemiş VEYA (bitiş zamanı yoksa) son 12 saatte açılmış.
 router.get('/live', async (_req, res: Response, next: NextFunction) => {
   try {
-    const now = new Date();
-    const freshSince = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-
     const activities = await prisma.charityActivity.findMany({
-      where: {
-        OR: [
-          { estimatedEndTime: { gte: now } },
-          { estimatedEndTime: null, createdAt: { gte: freshSince } },
-        ],
-      },
+      where: activeCharityWhere(new Date()),
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: {
@@ -390,6 +344,9 @@ router.put(
       if (req.body.address) updateData.address = req.body.address;
       if (req.body.estimatedEndTime !== undefined) {
         updateData.estimatedEndTime = req.body.estimatedEndTime ? new Date(req.body.estimatedEndTime) : null;
+        // Bitiş zamanı değiştiyse bildirim damgaları sıfırlanır ki yeni zamana göre tekrar bildirilsin.
+        updateData.endingSoonNotifiedAt = null;
+        updateData.endedNotifiedAt = null;
       }
 
       const updatedActivity = await prisma.charityActivity.update({

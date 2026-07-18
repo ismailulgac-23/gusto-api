@@ -47,7 +47,7 @@ const ERROR_CODES: Record<string, string> = {
   '40': 'Gönderici adını (msgheader) kontrol ediniz.',
   '41': 'Gönderici adını kontrol ediniz.',
   '50': 'Gönderilen numarayı kontrol ediniz.',
-  '60': 'Hesabınızda OTP SMS Paketi tanımlı değildir.',
+  '60': 'SMS gönderilemedi, lütfen daha sonra tekrar deneyin.',
   '70': 'Input parametrelerini kontrol ediniz.',
   '80': 'Sorgulama sınır aşımı (dakikada max 100 adet).',
   '100': 'Sistem hatası.',

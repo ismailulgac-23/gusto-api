@@ -42,7 +42,7 @@ router.post(
 
       res.json({
         success: true,
-        message: 'OTP sent successfully',
+        message: 'Doğrulama kodu gönderildi',
         jobid: result.jobid,
       });
     } catch (error) {
@@ -56,7 +56,7 @@ router.post(
   '/verify-otp',
   [
     phoneValidator,
-    body('otp').isLength({ min: 6, max: 6 }).withMessage('OTP kodu 6 haneli olmalıdır'),
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('Doğrulama kodu 6 haneli olmalıdır'),
     body('userType').isIn(['PROVIDER', 'RECEIVER']).optional(),
     body('name').optional().isString(),
     body('email').optional().isEmail().withMessage('Geçersiz email adresi'),
@@ -73,7 +73,7 @@ router.post(
       // OTP doğrula
       const isValid = verifyOTP(phoneNumber, otp);
       if (!isValid) {
-        throw new AppError('Geçersiz veya süresi dolmuş OTP kodu', 400);
+        throw new AppError('Doğrulama kodu geçersiz veya süresi dolmuş', 400);
       }
 
       // Telefonu normalize et

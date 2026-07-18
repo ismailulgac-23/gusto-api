@@ -270,6 +270,9 @@ model CharityActivity {
   longitude        Float
   address          String
   estimatedEndTime DateTime?
+  // Zamanlanmış bildirimlerin tekrar gönderilmemesi için damgalar (charity-scheduler.service.ts)
+  endingSoonNotifiedAt DateTime?
+  endedNotifiedAt      DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

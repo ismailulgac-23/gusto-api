@@ -113,6 +113,9 @@ initializeFirebase();
 // Review/DEMO modu cache'ini ısıt
 import('./services/settings.service').then((m) => m.refreshReviewModeCache());
 
+// Hayır aktiviteleri: bitişe yakın / sona erdi bildirimleri
+import('./services/charity-scheduler.service').then((m) => m.startCharityScheduler());
+
 // 404 handler
 app.use('*', (_req, res) => {
   res.status(404).json({

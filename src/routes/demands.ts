@@ -10,6 +10,7 @@ import { AppError } from "../middleware/errorHandler";
 import { isReviewActivePhone } from "../services/sms.service";
 import { sendNotificationToMultipleUsers } from "../services/fcm.service";
 import { notifyProvidersAboutDemand } from "../services/demand-notify.service";
+import { parseClientDate } from "../utils/datetime";
 
 const router = Router();
 
@@ -561,10 +562,11 @@ router.post(
       // Parse eventDate safely
       let parsedEventDate: Date | null = null;
       if (eventDate) {
-        if (typeof eventDate === "string") {
+        if (typeof eventDate === "number") {
           parsedEventDate = new Date(eventDate);
-        } else if (typeof eventDate === "number") {
-          parsedEventDate = new Date(eventDate);
+        } else {
+          // Saat dilimi eki yoksa Türkiye saati kabul edilir.
+          parsedEventDate = parseClientDate(eventDate);
         }
         // Validate date
         if (parsedEventDate && isNaN(parsedEventDate.getTime())) {

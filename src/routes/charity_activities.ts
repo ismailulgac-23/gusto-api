@@ -4,6 +4,7 @@ import prisma from '../lib/prisma';
 import { authenticate, authorizeProvider, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { notifyCityAboutCharity } from '../services/charity-notify.service';
+import { parseClientDate } from '../utils/datetime';
 
 const router = Router();
 
@@ -200,9 +201,9 @@ router.post(
           address,
           // Bitiş saati girilmediyse varsayılan süre uygulanır; böylece her
           // dağıtımın net bir bitişi ve geri sayımı olur.
-          estimatedEndTime: estimatedEndTime
-            ? new Date(estimatedEndTime)
-            : new Date(Date.now() + DEFAULT_DURATION_MINUTES * 60 * 1000),
+          estimatedEndTime:
+            parseClientDate(estimatedEndTime) ??
+            new Date(Date.now() + DEFAULT_DURATION_MINUTES * 60 * 1000),
         },
         include: {
           provider: {
@@ -387,7 +388,7 @@ router.put(
       if (req.body.longitude) updateData.longitude = parseFloat(req.body.longitude);
       if (req.body.address) updateData.address = req.body.address;
       if (req.body.estimatedEndTime !== undefined) {
-        updateData.estimatedEndTime = req.body.estimatedEndTime ? new Date(req.body.estimatedEndTime) : null;
+        updateData.estimatedEndTime = parseClientDate(req.body.estimatedEndTime);
         // Bitiş zamanı değiştiyse bildirim damgaları sıfırlanır ki yeni zamana göre tekrar bildirilsin.
         updateData.endingSoonNotifiedAt = null;
         updateData.endedNotifiedAt = null;

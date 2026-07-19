@@ -2,6 +2,7 @@ import { Router, Response, NextFunction } from 'express';
 import { body } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { parseClientDate } from '../utils/datetime';
 import { validateRequest } from '../middleware/validator';
 
 const router = Router();
@@ -27,7 +28,7 @@ router.post(
                 data: {
                     userId: req.userId as string,
                     amount: parseFloat(amount),
-                    paymentDate: new Date(paymentDate),
+                    paymentDate: parseClientDate(paymentDate) ?? new Date(),
                     bankName,
                     description: description || null,
                     status: 'PENDING',

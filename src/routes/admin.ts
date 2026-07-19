@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 import { validateRequest } from '../middleware/validator';
 import { sendNotificationToUser } from '../services/fcm.service';
 import { notifyProvidersAboutDemand } from '../services/demand-notify.service';
+import { parseClientDate } from '../utils/datetime';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -565,7 +566,7 @@ router.post(
           longitude: longitude ? parseFloat(longitude) : null,
           images: Array.isArray(images) ? images : [],
           peopleCount: peopleCount ? parseInt(peopleCount) : null,
-          eventDate: eventDate ? new Date(eventDate) : null,
+          eventDate: parseClientDate(eventDate),
           eventTime: eventTime || null,
           isUrgent,
           deadline: deadline || null,
@@ -684,7 +685,7 @@ router.patch(
       if (req.body.images !== undefined) updateData.images = Array.isArray(req.body.images) ? req.body.images : [];
       if (req.body.eventDate !== undefined) {
         updateData.eventDate = req.body.eventDate && req.body.eventDate !== ''
-          ? new Date(req.body.eventDate)
+          ? parseClientDate(req.body.eventDate)
           : null;
       }
       if (req.body.eventTime !== undefined) updateData.eventTime = req.body.eventTime || null;
@@ -706,7 +707,7 @@ router.patch(
           : parseInt(String(req.body.peopleCount), 10);
       }
       if (req.body.deadline !== undefined) {
-        updateData.deadline = req.body.deadline ? new Date(req.body.deadline) : null;
+        updateData.deadline = parseClientDate(req.body.deadline);
       }
       if (req.body.questionResponses !== undefined) {
         updateData.questionResponses = req.body.questionResponses && typeof req.body.questionResponses === 'object' && !Array.isArray(req.body.questionResponses)
@@ -1759,7 +1760,7 @@ router.post(
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude),
           address,
-          estimatedEndTime: estimatedEndTime ? new Date(estimatedEndTime) : null,
+          estimatedEndTime: parseClientDate(estimatedEndTime),
         },
         include: {
           provider: {

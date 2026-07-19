@@ -5,6 +5,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
 import { validateRequest } from '../middleware/validator';
 import { sendNotificationToUser } from '../services/fcm.service';
+import { notifyProvidersAboutDemand } from '../services/demand-notify.service';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -856,6 +857,10 @@ router.patch(
 
       const { isApproved } = req.body;
 
+      // Onay öncesi durum — aynı talep ikinci kez onaylanırsa sağlayıcılara
+      // "Yeni Talep" bildirimi tekrar gitmesin diye saklanır.
+      const wasApproved = demand.isApproved;
+
       // Eğer reddedilirse, talep direkt silinsin
       if (!isApproved) {
         // Bildirim gönder
@@ -937,6 +942,13 @@ router.patch(
           `"${demand.title}" başlıklı talebiniz onaylandı ve artık görülebilir.`,
           { type: 'DEMAND_APPROVED', demandId: demand.id }
         );
+      }
+
+      // Sağlayıcılara "Yeni Talep" bildirimi TAM BURADA gönderilir — talep
+      // ancak onaylandıktan sonra sağlayıcı listelerinde görünür hale gelir.
+      // Zaten onaylı bir talep tekrar onaylanırsa bildirim yinelenmez.
+      if (!wasApproved) {
+        void notifyProvidersAboutDemand(demand.id);
       }
 
       res.json({

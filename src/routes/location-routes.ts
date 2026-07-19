@@ -39,8 +39,30 @@ router.get("/cities/:city/counties", async (req, res, next) => {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
     }
-    const cityNormalized = normalizeTr(city);
-    const cityData = locationsData.find((e: any) => normalizeTr(e.name) === cityNormalized);
+    // Veritabanındaki kısa il adları ile resmî adlar arasındaki farklar.
+    // (DB'de "Afyon" yazıyor, veri setinde "AFYONKARAHİSAR" geçiyor.)
+    const ALIASES: Record<string, string> = {
+      afyon: 'afyonkarahisar',
+      urfa: 'sanliurfa',
+      antep: 'gaziantep',
+      maras: 'kahramanmaras',
+      ice: 'mersin',
+      icel: 'mersin',
+    };
+
+    const raw = normalizeTr(city);
+    const cityNormalized = ALIASES[raw] ?? raw;
+
+    let cityData = locationsData.find((e: any) => normalizeTr(e.name) === cityNormalized);
+
+    // Tam eşleşme yoksa önek eşleşmesine düş ("Afyon" -> "Afyonkarahisar").
+    if (!cityData) {
+      cityData = locationsData.find(
+        (e: any) =>
+          normalizeTr(e.name).startsWith(cityNormalized) ||
+          cityNormalized.startsWith(normalizeTr(e.name))
+      );
+    }
     if (!cityData) {
       return res.status(404).json({
         success: false,

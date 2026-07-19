@@ -64,11 +64,12 @@ router.post(
     body('address').optional({ values: 'null' }).isString(),
     body('categories').optional({ values: 'null' }).isArray(),
     body('cityId').optional({ values: 'null' }).isUUID().withMessage('Geçersiz şehir ID'),
+    body('countie').optional({ values: 'null' }).isString(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const { phoneNumber, otp, userType, name, email, companyName, address, categories, cityId } = req.body;
+      const { phoneNumber, otp, userType, name, email, companyName, address, categories, cityId, countie } = req.body;
 
       // OTP doğrula
       const isValid = verifyOTP(phoneNumber, otp);
@@ -129,6 +130,8 @@ router.post(
             address: address || null,
 
             ...(cityId ? { cityId } : {}),
+            // İlçe: yakınlık bazlı hayır bildirimlerinin ikinci hedefleme katmanı.
+            ...(countie ? { countie } : {}),
             categories: {
               create: categoryIds.map(categoryId => ({
                 categoryId,

@@ -155,10 +155,10 @@ router.post(
   authenticate,
   [
     body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Kategori adı 1-100 karakter arasında olmalıdır'),
-    body('icon').optional().isString(),
-    body('isActive').optional().isBoolean(),
-    body('questions').optional(),
-    body('parentId').optional().isUUID().withMessage('Geçersiz üst kategori ID'),
+    body('icon').optional({ values: 'null' }).isString(),
+    body('isActive').optional({ values: 'null' }).isBoolean(),
+    body('questions').optional({ values: 'null' }),
+    body('parentId').optional({ values: 'null' }).isUUID().withMessage('Geçersiz üst kategori ID'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -214,11 +214,11 @@ router.patch(
   '/:id',
   authenticate,
   [
-    body('name').optional().isString().isLength({ min: 1, max: 100 }),
-    body('icon').optional().isString(),
-    body('isActive').optional().isBoolean(),
-    body('questions').optional(),
-    body('parentId').optional().isUUID().withMessage('Geçersiz üst kategori ID'),
+    body('name').optional({ values: 'null' }).isString().isLength({ min: 1, max: 100 }),
+    body('icon').optional({ values: 'null' }).isString(),
+    body('isActive').optional({ values: 'null' }).isBoolean(),
+    body('questions').optional({ values: 'null' }),
+    body('parentId').optional({ values: 'null' }).isUUID().withMessage('Geçersiz üst kategori ID'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

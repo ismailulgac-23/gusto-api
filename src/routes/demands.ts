@@ -17,15 +17,15 @@ router.get(
   "/",
   authenticate,
   [
-    query("category").optional().isString(),
+    query("category").optional({ values: 'null' }).isString(),
     query("status")
-      .optional()
+      .optional({ values: 'null' })
       .isIn(["ACTIVE", "CLOSED", "COMPLETED", "CANCELLED"]),
-    query("cityId").optional().isString(),
-    query("search").optional().isString(),
-    query("allOpportunities").optional().isBoolean(),
-    query("page").optional().isInt({ min: 1 }),
-    query("limit").optional().isInt({ min: 1, max: 100 }),
+    query("cityId").optional({ values: 'null' }).isString(),
+    query("search").optional({ values: 'null' }).isString(),
+    query("allOpportunities").optional({ values: 'null' }).isBoolean(),
+    query("page").optional({ values: 'null' }).isInt({ min: 1 }),
+    query("limit").optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -344,14 +344,14 @@ router.post(
       .withMessage("Başlık en az 2, en fazla 200 karakter olmalıdır"),
     body("category").isString().withMessage("Kategori zorunludur"), // Can be category ID or name
     body("location")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null || value === "") return true;
         return typeof value === "string";
       })
       .withMessage("location must be a string"),
     body("latitude")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         const num = typeof value === "string" ? parseFloat(value) : value;
@@ -359,7 +359,7 @@ router.post(
       })
       .withMessage("Geçersiz latitude"),
     body("longitude")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         const num = typeof value === "string" ? parseFloat(value) : value;
@@ -367,14 +367,14 @@ router.post(
       })
       .withMessage("Geçersiz longitude"),
     body("images")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         return Array.isArray(value);
       })
       .withMessage("images must be an array"),
     body("peopleCount")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         const num = typeof value === "string" ? parseInt(value, 10) : value;
@@ -382,7 +382,7 @@ router.post(
       })
       .withMessage("Geçersiz peopleCount"),
     body("eventDate")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (!value) return true;
         // ISO8601 veya timestamp (number) kabul et
@@ -398,28 +398,28 @@ router.post(
       })
       .withMessage("Geçersiz tarih formatı"),
     body("eventTime")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null || value === "") return true;
         return typeof value === "string";
       })
       .withMessage("eventTime must be a string"),
     body("deadline")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null || value === "") return true;
         return typeof value === "string";
       })
       .withMessage("deadline must be a string"),
     body("address")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null || value === "") return true;
         return typeof value === "string";
       })
       .withMessage("address must be a string"),
     body("questionResponses")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         // Object veya Map kontrolü
@@ -429,7 +429,7 @@ router.post(
       })
       .withMessage("questionResponses must be an object"),
     body("cityIds")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null) return true;
         if (!Array.isArray(value)) return false;
@@ -439,7 +439,7 @@ router.post(
       })
       .withMessage("cityIds must be an array of strings"),
     body("countie")
-      .optional()
+      .optional({ values: 'null' })
       .custom((value) => {
         if (value === undefined || value === null || value === "") return true;
         return typeof value === "string";
@@ -737,14 +737,14 @@ router.put(
   authenticate,
   authorizeReceiver,
   [
-    body("title").optional().isString().isLength({ min: 3, max: 200 }),
-    body("category").optional().isString(), // Can be category ID or name
-    body("location").optional().isString(),
-    body("latitude").optional().isFloat(),
-    body("longitude").optional().isFloat(),
-    body("images").optional().isArray(),
+    body("title").optional({ values: 'null' }).isString().isLength({ min: 3, max: 200 }),
+    body("category").optional({ values: 'null' }).isString(), // Can be category ID or name
+    body("location").optional({ values: 'null' }).isString(),
+    body("latitude").optional({ values: 'null' }).isFloat(),
+    body("longitude").optional({ values: 'null' }).isFloat(),
+    body("images").optional({ values: 'null' }).isArray(),
     body("status")
-      .optional()
+      .optional({ values: 'null' })
       .isIn(["ACTIVE", "CLOSED", "COMPLETED", "CANCELLED"]),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {

@@ -34,7 +34,7 @@ router.post(
   authorizeProvider,
   [
     body('demandId').isUUID().withMessage('Geçersiz talep ID'),
-    body('message').optional().isString().isLength({ max: 1000 }).withMessage('Mesaj en fazla 1000 karakter olabilir'),
+    body('message').optional({ values: 'null' }).isString().isLength({ max: 1000 }).withMessage('Mesaj en fazla 1000 karakter olabilir'),
     body('price').custom((value) => {
       if (value === undefined || value === null) {
         throw new Error('Fiyat zorunludur');
@@ -259,9 +259,9 @@ router.patch(
   '/:id',
   authenticate,
   [
-    body('message').optional().isString().isLength({ max: 1000 }),
-    body('price').optional().isFloat({ min: 0 }),
-    body('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    body('message').optional({ values: 'null' }).isString().isLength({ max: 1000 }),
+    body('price').optional({ values: 'null' }).isFloat({ min: 0 }),
+    body('status').optional({ values: 'null' }).isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

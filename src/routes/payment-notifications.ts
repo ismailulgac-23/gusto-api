@@ -16,7 +16,7 @@ router.post(
         body('amount').isFloat({ min: 1 }).withMessage('Miktar en az 1 TL olmalıdır'),
         body('paymentDate').isISO8601().withMessage('Geçerli bir tarih giriniz'),
         body('bankName').isString().notEmpty().withMessage('Banka adı gereklidir'),
-        body('description').optional().isString(),
+        body('description').optional({ values: 'null' }).isString(),
     ],
     validateRequest,
     async (req: AuthRequest, res: Response, next: NextFunction) => {

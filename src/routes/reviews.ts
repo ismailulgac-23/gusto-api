@@ -88,8 +88,8 @@ router.post(
   [
     body('reviewedUserId').isUUID(),
     body('rating').isInt({ min: 1, max: 5 }),
-    body('comment').optional().isString().isLength({ max: 500 }),
-    body('offerId').optional().isUUID(), // Offer bazlı puanlama için
+    body('comment').optional({ values: 'null' }).isString().isLength({ max: 500 }),
+    body('offerId').optional({ values: 'null' }).isUUID(), // Offer bazlı puanlama için
   ],
   async (req: AuthRequest, res: any, next: any) => {
     try {

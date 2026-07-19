@@ -38,7 +38,7 @@ router.post(
     body('userId').isUUID().withMessage('Geçerli bir kullanıcı ID giriniz'),
     body('title').trim().notEmpty().withMessage('Başlık gereklidir'),
     body('body').trim().notEmpty().withMessage('Mesaj gereklidir'),
-    body('data').optional().isObject().withMessage('Data bir obje olmalıdır'),
+    body('data').optional({ values: 'null' }).isObject().withMessage('Data bir obje olmalıdır'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -110,9 +110,9 @@ router.post(
     body('userIds.*').isUUID().withMessage('Her kullanıcı ID geçerli bir UUID olmalıdır'),
     body('title').trim().notEmpty().withMessage('Başlık gereklidir'),
     body('body').trim().notEmpty().withMessage('Mesaj gereklidir'),
-    body('data').optional().isObject().withMessage('Data bir obje olmalıdır'),
-    body('userType').optional().isIn(['PROVIDER', 'RECEIVER']).withMessage('Geçerli bir kullanıcı tipi giriniz'),
-    body('cityId').optional().isUUID().withMessage('Geçerli bir şehir ID giriniz'),
+    body('data').optional({ values: 'null' }).isObject().withMessage('Data bir obje olmalıdır'),
+    body('userType').optional({ values: 'null' }).isIn(['PROVIDER', 'RECEIVER']).withMessage('Geçerli bir kullanıcı tipi giriniz'),
+    body('cityId').optional({ values: 'null' }).isUUID().withMessage('Geçerli bir şehir ID giriniz'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -197,9 +197,9 @@ router.post(
   [
     body('title').trim().notEmpty().withMessage('Başlık gereklidir'),
     body('body').trim().notEmpty().withMessage('Mesaj gereklidir'),
-    body('data').optional().isObject().withMessage('Data bir obje olmalıdır'),
-    body('userType').optional().isIn(['PROVIDER', 'RECEIVER']).withMessage('Geçerli bir kullanıcı tipi giriniz'),
-    body('cityId').optional().isUUID().withMessage('Geçerli bir şehir ID giriniz'),
+    body('data').optional({ values: 'null' }).isObject().withMessage('Data bir obje olmalıdır'),
+    body('userType').optional({ values: 'null' }).isIn(['PROVIDER', 'RECEIVER']).withMessage('Geçerli bir kullanıcı tipi giriniz'),
+    body('cityId').optional({ values: 'null' }).isUUID().withMessage('Geçerli bir şehir ID giriniz'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -324,6 +324,150 @@ router.get(
       res.json({
         success: true,
         data: users,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ==================== TOPLU BİLDİRİM ====================
+
+// Filtrelerden Prisma where koşulu üret. Toplu bildirim sayfası ile
+// hedef kitle sayımı ve gönderim aynı koşulu kullanır (sayı = gerçek alıcı).
+function buildAudienceWhere(q: any) {
+  const where: any = { isActive: true };
+
+  if (q.userType && q.userType !== 'ALL') where.userType = q.userType;
+  if (q.cityId) where.cityId = q.cityId;
+  if (q.countie) where.countie = q.countie;
+
+  const search = typeof q.search === 'string' ? q.search.trim() : '';
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { phoneNumber: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { companyName: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  return where;
+}
+
+// Hedef kitle önizlemesi: filtreye uyan toplam kişi + bildirimi fiilen
+// alabilecek (fcmToken'ı olan) kişi sayısı + örnek liste.
+router.get(
+  '/audience',
+  authenticate,
+  requireAdmin,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const where = buildAudienceWhere(req.query);
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+
+      const [total, withToken, users] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.count({ where: { ...where, fcmToken: { not: null } } }),
+        prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            email: true,
+            userType: true,
+            companyName: true,
+            profileImage: true,
+            countie: true,
+            fcmToken: true,
+            city: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+        }),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          total,
+          withToken,
+          // Cihaz token'ı olmayanlara push gidemez; panel bunu ayrıca gösterir.
+          withoutToken: total - withToken,
+          users: users.map((u) => ({ ...u, hasToken: Boolean(u.fcmToken), fcmToken: undefined })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Toplu bildirim gönder: ya filtreye uyan herkese, ya da seçilen userIds'e.
+router.post(
+  '/send-bulk',
+  authenticate,
+  requireAdmin,
+  [
+    body('title').isString().trim().isLength({ min: 1, max: 120 }).withMessage('Başlık zorunludur (en fazla 120 karakter)'),
+    body('message').isString().trim().isLength({ min: 1, max: 500 }).withMessage('Mesaj zorunludur (en fazla 500 karakter)'),
+    body('userIds').optional({ values: 'null' }).isArray(),
+    body('filters').optional({ values: 'null' }).isObject(),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+
+      const { title, message, userIds, filters } = req.body;
+
+      // Seçili kullanıcılar varsa onlar, yoksa filtreye uyan herkes.
+      const where =
+        Array.isArray(userIds) && userIds.length > 0
+          ? { id: { in: userIds }, isActive: true }
+          : buildAudienceWhere(filters || {});
+
+      const recipients = await prisma.user.findMany({
+        where,
+        select: { id: true, fcmToken: true },
+      });
+
+      if (recipients.length === 0) {
+        throw new AppError('Seçilen kritere uyan kullanıcı bulunamadı', 400);
+      }
+
+      // Uygulama içi bildirim kaydı herkese yazılır (token'ı olmasa da
+      // kullanıcı bildirimler ekranında görebilsin).
+      await prisma.notification.createMany({
+        data: recipients.map((u) => ({
+          userId: u.id,
+          title,
+          message,
+          type: 'ADMIN',
+        })),
+      });
+
+      const tokens = recipients.map((u) => u.fcmToken).filter(Boolean) as string[];
+      let pushResult: any = { successCount: 0, failureCount: 0 };
+      if (tokens.length > 0) {
+        pushResult = await sendNotificationToMultipleUsers(tokens, title, message, {
+          type: 'ADMIN',
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `${recipients.length} kullanıcıya bildirim kaydedildi, ${tokens.length} cihaza gönderildi`,
+        data: {
+          totalRecipients: recipients.length,
+          sentToDevices: tokens.length,
+          withoutToken: recipients.length - tokens.length,
+          pushSuccess: pushResult?.successCount ?? 0,
+          pushFailure: pushResult?.failureCount ?? 0,
+        },
       });
     } catch (error) {
       next(error);

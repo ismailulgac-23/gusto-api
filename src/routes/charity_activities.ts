@@ -74,7 +74,7 @@ router.get(
   [
     query('latitude').isFloat().withMessage('Geçerli bir enlem giriniz'),
     query('longitude').isFloat().withMessage('Geçerli bir boylam giriniz'),
-    query('radius').optional().isFloat({ min: 0.1, max: 50 }).withMessage('Yarıçap 0.1-50 km arasında olmalıdır'),
+    query('radius').optional({ values: 'null' }).isFloat({ min: 0.1, max: 50 }).withMessage('Yarıçap 0.1-50 km arasında olmalıdır'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -147,7 +147,7 @@ router.post(
     body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Geçerli bir enlem giriniz'),
     body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Geçerli bir boylam giriniz'),
     body('address').isString().isLength({ min: 5, max: 500 }).withMessage('Adres 5-500 karakter arasında olmalıdır'),
-    body('estimatedEndTime').optional().isISO8601().withMessage('Geçerli bir tarih formatı giriniz'),
+    body('estimatedEndTime').optional({ values: 'null' }).isISO8601().withMessage('Geçerli bir tarih formatı giriniz'),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -310,12 +310,12 @@ router.put(
   authenticate,
   authorizeProvider,
   [
-    body('title').optional().isString().isLength({ min: 3, max: 200 }),
-    body('description').optional().isString().isLength({ min: 10, max: 2000 }),
-    body('latitude').optional().isFloat({ min: -90, max: 90 }),
-    body('longitude').optional().isFloat({ min: -180, max: 180 }),
-    body('address').optional().isString().isLength({ min: 5, max: 500 }),
-    body('estimatedEndTime').optional().isISO8601(),
+    body('title').optional({ values: 'null' }).isString().isLength({ min: 3, max: 200 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ min: 10, max: 2000 }),
+    body('latitude').optional({ values: 'null' }).isFloat({ min: -90, max: 90 }),
+    body('longitude').optional({ values: 'null' }).isFloat({ min: -180, max: 180 }),
+    body('address').optional({ values: 'null' }).isString().isLength({ min: 5, max: 500 }),
+    body('estimatedEndTime').optional({ values: 'null' }).isISO8601(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

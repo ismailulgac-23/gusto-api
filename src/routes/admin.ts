@@ -71,15 +71,15 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 10000 }),
-    query('isActive').optional().custom((value) => {
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 10000 }),
+    query('isActive').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       if (typeof value === 'boolean') return true;
       if (value === 'true' || value === 'false') return true;
       return false;
     }),
-    query('search').optional().isString(),
+    query('search').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -185,9 +185,9 @@ router.post(
   requireAdmin,
   [
     body('name').isString().isLength({ min: 1, max: 100 }).withMessage('Kategori adı 1-100 karakter arasında olmalıdır'),
-    body('icon').optional().isString(),
-    body('isActive').optional().isBoolean(),
-    body('questions').optional(),
+    body('icon').optional({ values: 'null' }).isString(),
+    body('isActive').optional({ values: 'null' }).isBoolean(),
+    body('questions').optional({ values: 'null' }),
     body('parentId')
       .optional({ values: 'falsy' })
       .custom((value) => {
@@ -201,7 +201,7 @@ router.post(
         }
         return true;
       }),
-    body('commissionRate').optional().isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
+    body('commissionRate').optional({ values: 'null' }).isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -254,10 +254,10 @@ router.patch(
   authenticate,
   requireAdmin,
   [
-    body('name').optional().isString().isLength({ min: 1, max: 100 }),
-    body('icon').optional().isString(),
-    body('isActive').optional().isBoolean(),
-    body('questions').optional(),
+    body('name').optional({ values: 'null' }).isString().isLength({ min: 1, max: 100 }),
+    body('icon').optional({ values: 'null' }).isString(),
+    body('isActive').optional({ values: 'null' }).isBoolean(),
+    body('questions').optional({ values: 'null' }),
     body('parentId')
       .optional({ values: 'falsy' })
       .custom((value) => {
@@ -271,7 +271,7 @@ router.patch(
         }
         return true;
       }),
-    body('commissionRate').optional().isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
+    body('commissionRate').optional({ values: 'null' }).isFloat({ min: 0 }).withMessage('Komisyon oranı 0 veya daha büyük bir sayı olmalıdır'),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -395,14 +395,14 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    query('categoryId').optional().isUUID(),
-    query('userId').optional().isUUID(),
-    query('isUrgent').optional().isBoolean(),
-    query('isApproved').optional().isBoolean(),
-    query('search').optional().isString(),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('status').optional({ values: 'null' }).isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
+    query('categoryId').optional({ values: 'null' }).isUUID(),
+    query('userId').optional({ values: 'null' }).isUUID(),
+    query('isUrgent').optional({ values: 'null' }).isBoolean(),
+    query('isApproved').optional({ values: 'null' }).isBoolean(),
+    query('search').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -509,8 +509,8 @@ router.post(
     body('title').isString().isLength({ min: 3, max: 200 }).withMessage('Başlık 3-200 karakter arasında olmalıdır'),
     body('description').isString().isLength({ min: 10 }).withMessage('Açıklama en az 10 karakter olmalıdır'),
     body('categoryId').isUUID().withMessage('Geçersiz kategori ID'),
-    body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    body('isUrgent').optional().isBoolean(),
+    body('status').optional({ values: 'null' }).isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
+    body('isUrgent').optional({ values: 'null' }).isBoolean(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -607,42 +607,48 @@ router.patch(
   authenticate,
   requireAdmin,
   [
-    body('title').optional().isString().isLength({ min: 3, max: 200 }),
-    body('status').optional().isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
-    body('isUrgent').optional().custom((value) => {
+    body('title').optional({ values: 'null' }).isString().isLength({ min: 3, max: 200 }),
+    body('status').optional({ values: 'null' }).isIn(['ACTIVE', 'CLOSED', 'COMPLETED', 'CANCELLED']),
+    body('isUrgent').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null) return true;
       if (typeof value === 'boolean') return true;
       if (value === 'true' || value === 'false') return true;
       if (value === true || value === false) return true;
       return false;
     }).withMessage('isUrgent boolean olmalıdır'),
-    body('categoryId').optional().isUUID().withMessage('Geçersiz kategori ID'),
-    body('userId').optional().isUUID().withMessage('Geçersiz kullanıcı ID'),
-    body('location').optional().isString(),
-    body('address').optional().isString(),
-    body('latitude').optional().custom((value) => {
+    // UUID alanlarında 'falsy': form boş bırakıldığında '' gelir; bunu
+    // "değişiklik yok" saymak gerekir, aksi halde isUUID() 400 döner.
+    body('categoryId').optional({ values: 'falsy' }).isUUID().withMessage('Geçersiz kategori ID'),
+    body('userId').optional({ values: 'falsy' }).isUUID().withMessage('Geçersiz kullanıcı ID'),
+    body('location').optional({ values: 'null' }).isString(),
+    body('address').optional({ values: 'null' }).isString(),
+    body('description').optional({ values: 'null' }).isString(),
+    body('peopleCount').optional({ values: 'null' }).isInt({ min: 0 }).withMessage('Kişi sayısı geçerli bir sayı olmalıdır'),
+    body('deadline').optional({ values: 'falsy' }).custom((value) => !isNaN(new Date(value).getTime()))
+      .withMessage('deadline geçerli bir tarih olmalıdır'),
+    body('latitude').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       const num = typeof value === 'string' ? parseFloat(value) : value;
       return !isNaN(num) && isFinite(num);
     }).withMessage('latitude geçerli bir sayı olmalıdır'),
-    body('longitude').optional().custom((value) => {
+    body('longitude').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       const num = typeof value === 'string' ? parseFloat(value) : value;
       return !isNaN(num) && isFinite(num);
     }).withMessage('longitude geçerli bir sayı olmalıdır'),
-    body('eventDate').optional().custom((value) => {
+    body('eventDate').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       const date = new Date(value);
       return !isNaN(date.getTime());
     }).withMessage('eventDate geçerli bir tarih olmalıdır'),
-    body('eventTime').optional().isString(),
-    body('cityIds').optional().custom((value) => {
+    body('eventTime').optional({ values: 'null' }).isString(),
+    body('cityIds').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null) return true;
       return Array.isArray(value);
     }).withMessage('cityIds bir array olmalıdır'),
-    body('cityIds.*').optional().isUUID().withMessage('Geçersiz şehir ID'),
-    body('countie').optional().isString(),
-    body('questionResponses').optional().custom((value) => {
+    body('cityIds.*').optional({ values: 'null' }).isUUID().withMessage('Geçersiz şehir ID'),
+    body('countie').optional({ values: 'null' }).isString(),
+    body('questionResponses').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null) return true;
       return typeof value === 'object' && !Array.isArray(value);
     }).withMessage('questionResponses bir object olmalıdır'),
@@ -692,6 +698,15 @@ router.patch(
         }
       }
       if (req.body.address !== undefined) updateData.address = req.body.address || null;
+      if (req.body.description !== undefined) updateData.description = req.body.description || null;
+      if (req.body.peopleCount !== undefined) {
+        updateData.peopleCount = req.body.peopleCount === null || req.body.peopleCount === ''
+          ? null
+          : parseInt(String(req.body.peopleCount), 10);
+      }
+      if (req.body.deadline !== undefined) {
+        updateData.deadline = req.body.deadline ? new Date(req.body.deadline) : null;
+      }
       if (req.body.questionResponses !== undefined) {
         updateData.questionResponses = req.body.questionResponses && typeof req.body.questionResponses === 'object' && !Array.isArray(req.body.questionResponses)
           ? req.body.questionResponses
@@ -957,8 +972,8 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -1117,11 +1132,11 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
-    query('demandId').optional().isUUID(),
-    query('providerId').optional().isUUID(),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('status').optional({ values: 'null' }).isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    query('demandId').optional({ values: 'null' }).isUUID(),
+    query('providerId').optional({ values: 'null' }).isUUID(),
     // isApproved artık kullanılmıyor - teklifler direkt onaylanıyor
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1265,7 +1280,7 @@ router.post(
     body('providerId').isUUID().withMessage('Geçersiz sağlayıcı ID'),
     body('price').isFloat({ min: 0 }).withMessage('Geçerli bir fiyat giriniz'),
     body('estimatedTime').isString().withMessage('Tahmini süre zorunludur'),
-    body('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    body('status').optional({ values: 'null' }).isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1339,10 +1354,10 @@ router.patch(
   authenticate,
   requireAdmin,
   [
-    body('message').optional().isString().isLength({ max: 1000 }),
-    body('price').optional().isFloat({ min: 0 }),
-    body('estimatedTime').optional().isString(),
-    body('status').optional().isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
+    body('message').optional({ values: 'null' }).isString().isLength({ max: 1000 }),
+    body('price').optional({ values: 'null' }).isFloat({ min: 0 }),
+    body('estimatedTime').optional({ values: 'null' }).isString(),
+    body('status').optional({ values: 'null' }).isIn(['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED']),
     // isApproved artık kullanılmıyor - teklifler direkt onaylanıyor
   ],
   validateRequest,
@@ -1427,11 +1442,11 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('reviewedUserId').optional().isUUID(),
-    query('reviewerId').optional().isUUID(),
-    query('rating').optional().isInt({ min: 1, max: 5 }),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('reviewedUserId').optional({ values: 'null' }).isUUID(),
+    query('reviewerId').optional({ values: 'null' }).isUUID(),
+    query('rating').optional({ values: 'null' }).isInt({ min: 1, max: 5 }),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -1543,11 +1558,11 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('categoryId').optional().isUUID(),
-    query('providerId').optional().isUUID(),
-    query('search').optional().isString(),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('categoryId').optional({ values: 'null' }).isUUID(),
+    query('providerId').optional({ values: 'null' }).isUUID(),
+    query('search').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -1772,12 +1787,12 @@ router.put(
   authenticate,
   requireAdmin,
   [
-    body('title').optional().isString().isLength({ min: 3, max: 200 }),
-    body('description').optional().isString().isLength({ min: 10, max: 2000 }),
-    body('latitude').optional().isFloat({ min: -90, max: 90 }),
-    body('longitude').optional().isFloat({ min: -180, max: 180 }),
-    body('address').optional().isString().isLength({ min: 5, max: 500 }),
-    body('estimatedEndTime').optional().isISO8601(),
+    body('title').optional({ values: 'null' }).isString().isLength({ min: 3, max: 200 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ min: 10, max: 2000 }),
+    body('latitude').optional({ values: 'null' }).isFloat({ min: -90, max: 90 }),
+    body('longitude').optional({ values: 'null' }).isFloat({ min: -180, max: 180 }),
+    body('address').optional({ values: 'null' }).isString().isLength({ min: 5, max: 500 }),
+    body('estimatedEndTime').optional({ values: 'null' }).isISO8601(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1867,22 +1882,22 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 10000 }),
-    query('userType').optional().isIn(['PROVIDER', 'RECEIVER']),
-    query('isActive').optional().custom((value) => {
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 10000 }),
+    query('userType').optional({ values: 'null' }).isIn(['PROVIDER', 'RECEIVER']),
+    query('isActive').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       if (typeof value === 'boolean') return true;
       if (value === 'true' || value === 'false') return true;
       return false;
     }),
-    query('isAdmin').optional().custom((value) => {
+    query('isAdmin').optional({ values: 'null' }).custom((value) => {
       if (value === undefined || value === null || value === '') return true;
       if (typeof value === 'boolean') return true;
       if (value === 'true' || value === 'false') return true;
       return false;
     }),
-    query('search').optional().isString(),
+    query('search').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -1912,6 +1927,7 @@ router.get(
         prisma.user.findMany({
           where,
           include: {
+            city: { select: { id: true, name: true } },
             categories: {
               include: {
                 category: {
@@ -1967,6 +1983,7 @@ router.get('/users/:id', authenticate, requireAdmin, async (req: AuthRequest, re
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
       include: {
+        city: { select: { id: true, name: true } },
         categories: {
           include: {
             category: {
@@ -2014,20 +2031,23 @@ router.patch(
   authenticate,
   requireAdmin,
   [
-    body('name').optional().isString(),
-    body('email').optional().isEmail(),
-    body('phoneNumber').optional().isMobilePhone('any'),
-    body('userType').optional().isIn(['PROVIDER', 'RECEIVER']),
-    body('bio').optional().isString(),
-    body('location').optional().isString(),
-    body('profileImage').optional().isString(),
-    body('companyName').optional().isString(),
-    body('address').optional().isString(),
-    body('responseTime').optional().isString(),
-    body('isActive').optional().isBoolean(),
-    body('isAdmin').optional().isBoolean(),
-    body('password').optional().isLength({ min: 6 }),
-    body('categories').optional().isArray(),
+    body('name').optional({ values: 'null' }).isString(),
+    body('email').optional({ values: 'null' }).isEmail(),
+    body('phoneNumber').optional({ values: 'null' }).isMobilePhone('any'),
+    body('userType').optional({ values: 'null' }).isIn(['PROVIDER', 'RECEIVER']),
+    body('bio').optional({ values: 'null' }).isString(),
+    body('location').optional({ values: 'null' }).isString(),
+    body('profileImage').optional({ values: 'null' }).isString(),
+    body('companyName').optional({ values: 'null' }).isString(),
+    body('address').optional({ values: 'null' }).isString(),
+    body('responseTime').optional({ values: 'null' }).isString(),
+    body('isActive').optional({ values: 'null' }).isBoolean(),
+    body('isAdmin').optional({ values: 'null' }).isBoolean(),
+    body('password').optional({ values: 'null' }).isLength({ min: 6 }),
+    body('categories').optional({ values: 'null' }).isArray(),
+    // İl: boş seçim '' gelebilir -> 'falsy' ile atlanır, null ise şehir kaldırılır.
+    body('cityId').optional({ values: 'falsy' }).isUUID().withMessage('Geçersiz şehir ID'),
+    body('countie').optional({ values: 'null' }).isString(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -2038,6 +2058,17 @@ router.patch(
 
       if (!user) {
         throw new AppError('Kullanıcı bulunamadı', 404);
+      }
+
+      // Yöneticinin kendi yetkisini kaldırmasını / kendini pasifleştirmesini engelle:
+      // aksi halde panele erişimini kalıcı olarak kaybedebilir.
+      if (req.params.id === req.userId) {
+        if (req.body.isAdmin === false) {
+          throw new AppError('Kendi yönetici yetkinizi kaldıramazsınız', 400);
+        }
+        if (req.body.isActive === false) {
+          throw new AppError('Kendi hesabınızı pasife alamazsınız', 400);
+        }
       }
 
       const {
@@ -2094,8 +2125,20 @@ router.patch(
                 } else if (cat.trim().length > 0) {
                   categoryNames.push(cat.trim());
                 }
-              } else if (cat && typeof cat === 'object' && 'id' in cat && cat.id) {
-                categoryIds.push(String(cat.id));
+              } else if (cat && typeof cat === 'object') {
+                // Gelen nesne üç biçimden biri olabilir:
+                //  - UserCategory join satırı  -> categoryId (veya category.id) kullanılmalı
+                //  - Category kaydı            -> id
+                //  - MultiSelect seçeneği      -> value
+                // DİKKAT: join satırında `id` UserCategory'nin kendi id'sidir; onu
+                // kategori id'si sanmak hiçbir kaydı eşleştirmez ve mevcut
+                // kategorilerin silinmesine yol açar.
+                const resolved =
+                  (cat as any).categoryId ??
+                  (cat as any).category?.id ??
+                  (cat as any).value ??
+                  (cat as any).id;
+                if (resolved) categoryIds.push(String(resolved));
               }
             });
 
@@ -2148,6 +2191,9 @@ router.patch(
       if (isActive !== undefined) updateData.isActive = isActive;
       if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
       if (hashedPassword !== undefined) updateData.password = hashedPassword;
+      // İl / ilçe: '' veya null gönderilirse alan temizlenir.
+      if (req.body.cityId !== undefined) updateData.cityId = req.body.cityId || null;
+      if (req.body.countie !== undefined) updateData.countie = req.body.countie || null;
 
       const updatedUser = await prisma.user.update({
         where: { id: req.params.id },
@@ -2196,6 +2242,13 @@ router.delete('/users/:id', authenticate, requireAdmin, async (req: AuthRequest,
       throw new AppError('Kullanıcı bulunamadı', 404);
     }
 
+    // Yönetici kendi hesabını silemez (panel erişimi kaybolur).
+    if (req.params.id === req.userId) {
+      throw new AppError('Kendi hesabınızı silemezsiniz', 400);
+    }
+
+    // Not: silme işlemi talep, teklif, değerlendirme, işlem geçmişi gibi tüm
+    // ilişkili kayıtları cascade ile siler (schema.prisma onDelete: Cascade).
     await prisma.user.delete({
       where: { id: req.params.id },
     });
@@ -2536,9 +2589,9 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('search').optional().isString(),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('search').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -2605,10 +2658,10 @@ router.get(
 router.get(
   '/blogs/public',
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('search').optional().isString(),
-    query('tag').optional().isString(),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('search').optional({ values: 'null' }).isString(),
+    query('tag').optional({ values: 'null' }).isString(),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -2713,7 +2766,7 @@ router.post(
   [
     body('title').isString().isLength({ min: 1 }).withMessage('Başlık zorunludur'),
     body('content').isString().isLength({ min: 1 }).withMessage('İçerik zorunludur'),
-    body('tags').optional().custom((value) => {
+    body('tags').optional({ values: 'null' }).custom((value) => {
       if (typeof value === 'string') {
         try {
           JSON.parse(value);
@@ -2780,9 +2833,9 @@ router.patch(
   requireAdmin,
   upload.single('image'),
   [
-    body('title').optional().isString().isLength({ min: 1 }),
-    body('content').optional().isString().isLength({ min: 1 }),
-    body('tags').optional(),
+    body('title').optional({ values: 'null' }).isString().isLength({ min: 1 }),
+    body('content').optional({ values: 'null' }).isString().isLength({ min: 1 }),
+    body('tags').optional({ values: 'null' }),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -2881,9 +2934,9 @@ router.get(
   authenticate,
   requireAdmin,
   [
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('status').optional().isIn(['PENDING', 'APPROVED', 'REJECTED']),
+    query('page').optional({ values: 'null' }).isInt({ min: 1 }),
+    query('limit').optional({ values: 'null' }).isInt({ min: 1, max: 100 }),
+    query('status').optional({ values: 'null' }).isIn(['PENDING', 'APPROVED', 'REJECTED']),
   ],
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -2937,7 +2990,7 @@ router.patch(
   requireAdmin,
   [
     body('status').isIn(['APPROVED', 'REJECTED']).withMessage('Geçersiz durum'),
-    body('adminNote').optional().isString(),
+    body('adminNote').optional({ values: 'null' }).isString(),
   ],
   validateRequest,
   async (req: AuthRequest, res: Response, next: NextFunction) => {

@@ -29,6 +29,55 @@ export function getReviewMode(): boolean {
   return cachedReviewMode;
 }
 
+// ==================== ZORUNLU SÜRÜM GÜNCELLEME ====================
+
+// Uygulamanın çalışmasına izin verilen EN DÜŞÜK sürüm. Buradaki değer
+// yükseltilince, daha eski sürümdeki kullanıcılar güncelleme ekranında kilitlenir.
+export const APP_VERSION_KEYS = {
+  minIos: 'min_ios_version',
+  minAndroid: 'min_android_version',
+  iosUrl: 'ios_store_url',
+  androidUrl: 'android_store_url',
+} as const;
+
+const DEFAULTS: Record<string, string> = {
+  [APP_VERSION_KEYS.minIos]: '1.0.0',
+  [APP_VERSION_KEYS.minAndroid]: '1.0.0',
+  [APP_VERSION_KEYS.iosUrl]: 'https://apps.apple.com/tr/app/gustoapp/id6765545622',
+  [APP_VERSION_KEYS.androidUrl]: 'https://play.google.com/store/apps/details?id=com.gustoapp.net',
+};
+
+export async function getAppVersionConfig() {
+  const keys = Object.values(APP_VERSION_KEYS);
+  const rows = await prisma.setting.findMany({ where: { key: { in: [...keys] } } });
+  const map = new Map(rows.map((r) => [r.key, r.value]));
+
+  return {
+    minIosVersion: map.get(APP_VERSION_KEYS.minIos) ?? DEFAULTS[APP_VERSION_KEYS.minIos],
+    minAndroidVersion: map.get(APP_VERSION_KEYS.minAndroid) ?? DEFAULTS[APP_VERSION_KEYS.minAndroid],
+    iosStoreUrl: map.get(APP_VERSION_KEYS.iosUrl) ?? DEFAULTS[APP_VERSION_KEYS.iosUrl],
+    androidStoreUrl: map.get(APP_VERSION_KEYS.androidUrl) ?? DEFAULTS[APP_VERSION_KEYS.androidUrl],
+  };
+}
+
+export async function setAppVersionConfig(input: Record<string, string | undefined>) {
+  const entries: Array<[string, string]> = [];
+  if (input.minIosVersion) entries.push([APP_VERSION_KEYS.minIos, input.minIosVersion]);
+  if (input.minAndroidVersion) entries.push([APP_VERSION_KEYS.minAndroid, input.minAndroidVersion]);
+  if (input.iosStoreUrl) entries.push([APP_VERSION_KEYS.iosUrl, input.iosStoreUrl]);
+  if (input.androidStoreUrl) entries.push([APP_VERSION_KEYS.androidUrl, input.androidStoreUrl]);
+
+  for (const [key, value] of entries) {
+    await prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
+
+  return getAppVersionConfig();
+}
+
 export async function setReviewMode(enabled: boolean): Promise<void> {
   const value = enabled ? 'on' : 'off';
   await prisma.setting.upsert({

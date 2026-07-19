@@ -3,7 +3,13 @@ import { body, validationResult } from 'express-validator';
 import prisma from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AppError } from '../middleware/errorHandler';
-import { getReviewMode, setReviewMode, refreshReviewModeCache } from '../services/settings.service';
+import {
+  getReviewMode,
+  setReviewMode,
+  refreshReviewModeCache,
+  getAppVersionConfig,
+  setAppVersionConfig,
+} from '../services/settings.service';
 
 const router = Router();
 
@@ -92,6 +98,60 @@ router.put(
         message: enabled ? 'Review/DEMO modu açıldı.' : 'Review/DEMO modu kapatıldı.',
         data: { isEnabled: getReviewMode() },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ==================== UYGULAMA SÜRÜMÜ ====================
+
+// PUBLIC: Uygulama açılışta ve öne geldiğinde bunu çağırır.
+// minVersion'dan eski sürümdeki kullanıcı zorunlu güncelleme ekranında kilitlenir.
+router.get('/app-version', async (_req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const config = await getAppVersionConfig();
+    res.json({ success: true, data: config });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Sürüm ayarlarını oku (Admin)
+router.get(
+  '/admin/app-version',
+  authenticate,
+  requireAdmin,
+  async (_req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      res.json({ success: true, data: await getAppVersionConfig() });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Sürüm ayarlarını güncelle (Admin)
+router.put(
+  '/admin/app-version',
+  authenticate,
+  requireAdmin,
+  [
+    body('minIosVersion').optional({ values: 'falsy' }).matches(/^\d+(\.\d+){0,3}$/)
+      .withMessage('iOS sürümü 1.0.2 biçiminde olmalıdır'),
+    body('minAndroidVersion').optional({ values: 'falsy' }).matches(/^\d+(\.\d+){0,3}$/)
+      .withMessage('Android sürümü 1.0.2 biçiminde olmalıdır'),
+    body('iosStoreUrl').optional({ values: 'falsy' }).isURL().withMessage('Geçersiz App Store adresi'),
+    body('androidStoreUrl').optional({ values: 'falsy' }).isURL().withMessage('Geçersiz Play Store adresi'),
+  ],
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(errors.array()[0].msg, 400);
+      }
+      const data = await setAppVersionConfig(req.body);
+      res.json({ success: true, message: 'Sürüm ayarları güncellendi', data });
     } catch (error) {
       next(error);
     }

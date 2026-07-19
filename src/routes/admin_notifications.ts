@@ -456,6 +456,14 @@ router.post(
         pushResult = await sendNotificationToMultipleUsers(tokens, title, message, {
           type: 'ADMIN',
         });
+        // Push hataları sessizce kaybolmasın — panelde "gönderildi" görünüp
+        // telefona düşmediği durumları buradan teşhis ediyoruz.
+        if (pushResult.failureCount > 0) {
+          console.error(
+            `[BulkNotify] ${pushResult.failureCount}/${tokens.length} push başarısız:`,
+            pushResult.errors?.slice(0, 3)
+          );
+        }
       }
 
       res.json({

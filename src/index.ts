@@ -1,3 +1,16 @@
+// ÖNEMLİ — Firebase (FCM) bağlantısı için ağ ayarı.
+// Sunucunun global IPv6 adresi yok ama DNS AAAA kaydı dönüyor; Node varsayılan
+// olarak IPv6'yı önce deneyip "Happy Eyeballs" ile paralel bağlanmaya çalışınca
+// firebase-admin'in HTTP/2 oturumu "app/network-error (AggregateError)" ile
+// düşüyor ve HİÇBİR push gönderilemiyordu. IPv4'ü önceleyip çift-yığın
+// seçimini kapatmak sorunu kökten çözüyor. Diğer her şeyden ÖNCE çalışmalı.
+import dns from 'dns';
+import net from 'net';
+dns.setDefaultResultOrder('ipv4first');
+if (typeof (net as any).setDefaultAutoSelectFamily === 'function') {
+  (net as any).setDefaultAutoSelectFamily(false);
+}
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

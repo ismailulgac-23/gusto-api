@@ -7,14 +7,36 @@ import { notifyCityAboutCharity } from '../services/charity-notify.service';
 
 const router = Router();
 
-// Aktif (devam eden) hayır aktivitesi koşulu — /live ve /nearby aynı kuralı kullanır:
-// bitiş zamanı gelmemiş VEYA (bitiş zamanı yoksa) son 12 saatte açılmış.
+// Bir hayır dağıtımının varsayılan süresi. Sağlayıcı bitiş saati girmezse
+// açılıştan itibaren bu süre kadar sürdüğü varsayılır ve geri sayım buna göre işler.
+export const DEFAULT_DURATION_MINUTES = 90;
+
+// Sona erdikten sonra "tamamlandı" olarak kısa süre daha listede kalır,
+// sonra kendiliğinden düşer.
+const COMPLETED_VISIBLE_MINUTES = 15;
+
+// Aktif (devam eden) hayır aktivitesi koşulu — /live ve /nearby aynı kuralı kullanır.
+// Bitiş zamanı yoksa açılıştan itibaren DEFAULT_DURATION_MINUTES kadar sürer.
 function activeCharityWhere(now: Date) {
-  const freshSince = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const defaultStartCutoff = new Date(now.getTime() - DEFAULT_DURATION_MINUTES * 60 * 1000);
   return {
     OR: [
       { estimatedEndTime: { gte: now } },
-      { estimatedEndTime: null, createdAt: { gte: freshSince } },
+      { estimatedEndTime: null, createdAt: { gte: defaultStartCutoff } },
+    ],
+  };
+}
+
+// /live için: devam edenler + yeni tamamlananlar (kısa süre "tamamlandı" gösterilir).
+function liveCharityWhere(now: Date) {
+  const endedSince = new Date(now.getTime() - COMPLETED_VISIBLE_MINUTES * 60 * 1000);
+  const defaultStartCutoff = new Date(
+    now.getTime() - (DEFAULT_DURATION_MINUTES + COMPLETED_VISIBLE_MINUTES) * 60 * 1000
+  );
+  return {
+    OR: [
+      { estimatedEndTime: { gte: endedSince } },
+      { estimatedEndTime: null, createdAt: { gte: defaultStartCutoff } },
     ],
   };
 }
@@ -176,7 +198,11 @@ router.post(
           latitude: parseFloat(latitude),
           longitude: parseFloat(longitude),
           address,
-          estimatedEndTime: estimatedEndTime ? new Date(estimatedEndTime) : null,
+          // Bitiş saati girilmediyse varsayılan süre uygulanır; böylece her
+          // dağıtımın net bir bitişi ve geri sayımı olur.
+          estimatedEndTime: estimatedEndTime
+            ? new Date(estimatedEndTime)
+            : new Date(Date.now() + DEFAULT_DURATION_MINUTES * 60 * 1000),
         },
         include: {
           provider: {
@@ -221,11 +247,13 @@ router.post(
 );
 
 // CANLI hayır dağıtım noktaları — PUBLIC (web ana sayfa haritası için, auth yok).
-// Aktif sayılma kuralı: bitiş zamanı gelmemiş VEYA (bitiş zamanı yoksa) son 12 saatte açılmış.
+// Devam edenler geri sayımla, yeni bitenler "tamamlandı" olarak döner; kısa süre
+// sonra listeden kendiliğinden düşerler.
 router.get('/live', async (_req, res: Response, next: NextFunction) => {
   try {
+    const now = new Date();
     const activities = await prisma.charityActivity.findMany({
-      where: activeCharityWhere(new Date()),
+      where: liveCharityWhere(now),
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: {
@@ -244,7 +272,21 @@ router.get('/live', async (_req, res: Response, next: NextFunction) => {
       },
     });
 
-    res.json({ success: true, data: activities });
+    // İstemci saatine güvenmemek için bitiş bilgisini sunucuda hesaplayıp ekle.
+    const data = activities.map((a) => {
+      const end =
+        a.estimatedEndTime ??
+        new Date(a.createdAt.getTime() + DEFAULT_DURATION_MINUTES * 60 * 1000);
+      const remainingMs = end.getTime() - now.getTime();
+      return {
+        ...a,
+        endsAt: end,
+        isCompleted: remainingMs <= 0,
+        remainingMinutes: Math.max(0, Math.round(remainingMs / 60000)),
+      };
+    });
+
+    res.json({ success: true, data, serverTime: now });
   } catch (error) {
     next(error);
   }

@@ -11,6 +11,9 @@ const SELECT = {
   title: true,
   address: true,
   providerId: true,
+  // Yakınlık bazlı hedefleme için koordinat da gerekir.
+  latitude: true,
+  longitude: true,
 } as const;
 
 // Bitişe yakın olanlar: bitiş zamanı şu an ile +30dk arasında ve henüz bildirilmemiş.

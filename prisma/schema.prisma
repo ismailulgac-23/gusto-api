@@ -94,6 +94,10 @@ model User {
   completedJobs Int     @default(0)
   cityId        String? // Şehir ID (il)
   countie       String? // İlçe adı (Demand.countie ile aynı kaynaktan: /locations/cities/:il/counties)
+  // Yakınlık bazlı bildirim için son bilinen konum (uygulama profil/harita
+  // ekranlarından gönderir). Hayır bildirimleri bu koordinata göre hedeflenir.
+  latitude      Float?
+  longitude     Float?
   fcmToken      String? // FCM token for push notifications
   balance       Float   @default(0) // Kullanıcı bakiyesi (TL)
 

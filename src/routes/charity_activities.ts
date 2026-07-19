@@ -205,6 +205,8 @@ router.post(
         title: activity.title,
         address: activity.address,
         providerId: req.userId!,
+        latitude: activity.latitude,
+        longitude: activity.longitude,
       });
 
       res.json({

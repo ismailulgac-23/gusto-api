@@ -154,6 +154,20 @@ router.put(
         updateData.userType = userType;
       }
 
+      // Son bilinen konum — yakınlık bazlı hayır bildirimlerinin hedeflemesi
+      // bu koordinata dayanır. Uygulama profil ve harita ekranlarından gönderir.
+      const { latitude, longitude, cityId, countie } = req.body;
+      if (latitude !== undefined && latitude !== null && latitude !== '') {
+        const lat = parseFloat(String(latitude));
+        if (!isNaN(lat) && lat >= -90 && lat <= 90) updateData.latitude = lat;
+      }
+      if (longitude !== undefined && longitude !== null && longitude !== '') {
+        const lng = parseFloat(String(longitude));
+        if (!isNaN(lng) && lng >= -180 && lng <= 180) updateData.longitude = lng;
+      }
+      if (cityId !== undefined) updateData.cityId = cityId || null;
+      if (countie !== undefined) updateData.countie = countie || null;
+
       const user = await prisma.user.update({
         where: { id: req.userId },
         data: updateData,

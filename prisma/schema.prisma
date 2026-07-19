@@ -77,6 +77,11 @@ model User {
   name         String?
   email        String?  @unique
   password     String? // Admin login için
+  // 4 haneli hızlı giriş PIN'i (bcrypt ile saklanır). Oturum süresi dolduğunda
+  // kullanıcı SMS beklemeden PIN ile girer.
+  pin          String?
+  pinFailedAttempts Int      @default(0) // Art arda hatalı deneme sayısı
+  pinLockedUntil    DateTime? // Brute-force koruması: bu ana kadar PIN denemesi kapalı
   userType     UserType
   isAdmin      Boolean  @default(false) // Admin kontrolü
   profileImage String?

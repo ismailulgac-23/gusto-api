@@ -6,7 +6,7 @@ import prisma from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendOTP, verifyOTP, isProtectedTestPhone } from '../services/sms.service';
 import { getReviewMode } from '../services/settings.service';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, authenticate } from '../middleware/auth';
 import { validateRequest } from '../middleware/validator';
 
 const router = Router();
@@ -525,6 +525,204 @@ router.get(
           completedJobs: user.completedJobs,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ==================== HIZLI GİRİŞ (PIN) ====================
+
+const PIN_MAX_ATTEMPTS = 5;
+const PIN_LOCK_MINUTES = 15;
+
+function signToken(user: { id: string; userType: string }) {
+  return jwt.sign(
+    { userId: user.id, userType: user.userType },
+    process.env.JWT_SECRET ?? 'secret',
+    { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' } as jwt.SignOptions
+  );
+}
+
+// Bu numarada PIN tanımlı mı? (Uygulama açılışta hangi ekranı göstereceğini buradan bilir.)
+router.post(
+  '/pin/status',
+  [phoneValidator],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const normalizedPhone = req.body.phoneNumber.startsWith('+')
+        ? req.body.phoneNumber
+        : `+${req.body.phoneNumber}`;
+
+      const user = await prisma.user.findUnique({
+        where: { phoneNumber: normalizedPhone },
+        select: { pin: true, pinLockedUntil: true },
+      });
+
+      const locked = !!(user?.pinLockedUntil && user.pinLockedUntil > new Date());
+      res.json({
+        success: true,
+        data: { hasPin: !!user?.pin, locked },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PIN belirle / değiştir (oturum açıkken).
+router.post(
+  '/pin/set',
+  authenticate,
+  [
+    body('pin')
+      .matches(/^\d{4}$/)
+      .withMessage('PIN 4 haneli rakam olmalıdır'),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { pin } = req.body;
+
+      // Kolay tahmin edilen PIN'leri engelle (1111, 1234, 0000 gibi).
+      if (/^(\d)\1{3}$/.test(pin) || '0123456789'.includes(pin) || '9876543210'.includes(pin)) {
+        throw new AppError('Çok kolay tahmin edilen bir PIN seçtiniz, farklı bir PIN deneyin', 400);
+      }
+
+      const hashed = await bcrypt.hash(pin, 10);
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { pin: hashed, pinFailedAttempts: 0, pinLockedUntil: null },
+      });
+
+      res.json({ success: true, message: 'PIN oluşturuldu' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PIN'i kaldır (oturum açıkken).
+router.delete(
+  '/pin',
+  authenticate,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { pin: null, pinFailedAttempts: 0, pinLockedUntil: null },
+      });
+      res.json({ success: true, message: 'PIN kaldırıldı' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PIN ile giriş — SMS beklemeden oturum açar.
+router.post(
+  '/pin/login',
+  [
+    phoneValidator,
+    body('pin').matches(/^\d{4}$/).withMessage('PIN 4 haneli rakam olmalıdır'),
+  ],
+  validateRequest,
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { pin } = req.body;
+      const normalizedPhone = req.body.phoneNumber.startsWith('+')
+        ? req.body.phoneNumber
+        : `+${req.body.phoneNumber}`;
+
+      const user = await prisma.user.findUnique({
+        where: { phoneNumber: normalizedPhone },
+      });
+
+      // Kullanıcı yok / PIN tanımsız durumlarını ayırt ETMEDEN aynı mesajı
+      // döndürüyoruz; numara taraması yapılmasını zorlaştırır.
+      if (!user || !user.pin) {
+        throw new AppError('PIN ile giriş yapılamadı. SMS ile giriş yapabilirsiniz.', 401);
+      }
+
+      if (!user.isActive) {
+        throw new AppError('Hesabınız aktif değil', 403);
+      }
+
+      // Brute-force kilidi
+      if (user.pinLockedUntil && user.pinLockedUntil > new Date()) {
+        const mins = Math.ceil((user.pinLockedUntil.getTime() - Date.now()) / 60000);
+        throw new AppError(
+          `Çok fazla hatalı deneme. ${mins} dakika sonra tekrar deneyin veya SMS ile giriş yapın.`,
+          429
+        );
+      }
+
+      const valid = await bcrypt.compare(pin, user.pin);
+
+      if (!valid) {
+        const attempts = user.pinFailedAttempts + 1;
+        const lock = attempts >= PIN_MAX_ATTEMPTS;
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            pinFailedAttempts: lock ? 0 : attempts,
+            pinLockedUntil: lock
+              ? new Date(Date.now() + PIN_LOCK_MINUTES * 60 * 1000)
+              : null,
+          },
+        });
+
+        if (lock) {
+          throw new AppError(
+            `Çok fazla hatalı deneme. ${PIN_LOCK_MINUTES} dakika sonra tekrar deneyin veya SMS ile giriş yapın.`,
+            429
+          );
+        }
+        throw new AppError(
+          `PIN hatalı. ${PIN_MAX_ATTEMPTS - attempts} deneme hakkınız kaldı.`,
+          401
+        );
+      }
+
+      // Başarılı: sayaç sıfırlanır.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { pinFailedAttempts: 0, pinLockedUntil: null },
+      });
+
+      const token = signToken(user);
+
+      res.json({
+        success: true,
+        message: 'Giriş başarılı',
+        data: {
+          token,
+          user: {
+            id: user.id,
+            phoneNumber: user.phoneNumber,
+            name: user.name,
+            email: user.email,
+            userType: user.userType,
+            isAdmin: user.isAdmin,
+            isActive: user.isActive,
+            profileImage: user.profileImage,
+            companyName: user.companyName,
+            address: user.address,
+            bio: user.bio,
+            location: user.location,
+            cityId: user.cityId,
+            countie: user.countie,
+            rating: user.rating,
+            ratingCount: user.ratingCount,
+            responseTime: user.responseTime,
+            memberSince: user.memberSince,
+            completedJobs: user.completedJobs,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
         },
       });
     } catch (error) {
